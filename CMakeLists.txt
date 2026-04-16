@@ -67,10 +67,5 @@ set(Ctf-Header
 	)
 
 # Build the ctf dynamic library
-add_library(game SHARED ${Ctf-Source} ${Ctf-Header})
-set_target_properties(game PROPERTIES
-	PREFIX ""
-	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/Debug
-	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/Release
-)
-target_link_libraries(game ${CtfLinkerFlags})
+add_library(ctf SHARED ${Ctf-Source} ${Ctf-Header})
+target_link_libraries(ctf ${CtfLinkerFlags})
