@@ -36,6 +36,12 @@ void SP_misc_teleporter_dest(edict_t *ent);
 void
 SP_info_player_start(edict_t *self)
 {
+	if (!self)
+	{
+		return;
+	}
+
+
 	if (!coop->value)
 	{
 		return;
@@ -49,6 +55,11 @@ SP_info_player_start(edict_t *self)
 void
 SP_info_player_deathmatch(edict_t *self)
 {
+	if (!self)
+	{
+		return;
+	}
+
 	if (!deathmatch->value)
 	{
 		G_FreeEdict(self);
@@ -66,6 +77,11 @@ SP_info_player_deathmatch(edict_t *self)
 void
 SP_info_player_coop(edict_t *self)
 {
+	if (!self)
+	{
+		return;
+	}
+
 	if (!coop->value)
 	{
 		G_FreeEdict(self);
@@ -87,16 +103,25 @@ SP_info_player_intermission(edict_t *ent)
 /* ======================================================================= */
 
 void
-player_pain(edict_t *self, edict_t *other, float kick, int damage)
+player_pain(edict_t *self /* unused */, edict_t *other /* unused */,
+		float kick /* unused */, int damage /* unused */)
 {
-	/* player pain is handled at the
-	   end of the frame in P_DamageFeedback */
+	/* Player pain is handled at the end
+	 * of the frame in P_DamageFeedback.
+	 * This function is still here since
+	 * the player is an entity and needs
+	 * a pain callback */
 }
 
-qboolean
+static qboolean
 IsFemale(edict_t *ent)
 {
 	char *info;
+
+	if (!ent)
+	{
+		return false;
+	}
 
 	if (!ent->client)
 	{
@@ -113,15 +138,52 @@ IsFemale(edict_t *ent)
 	return false;
 }
 
+static qboolean
+IsNeutral(edict_t *ent)
+{
+	char *info;
+
+	if (!ent)
+	{
+		return false;
+	}
+
+	if (!ent->client)
+	{
+		return false;
+	}
+
+	info = Info_ValueForKey(ent->client->pers.userinfo, "gender");
+
+	if (strstr(info, "crakhor"))
+	{
+		return false;
+	}
+
+	if ((info[0] != 'f') && (info[0] != 'F') && (info[0] != 'm') &&
+		(info[0] != 'M'))
+	{
+		return true;
+	}
+
+	return false;
+}
+
 void
-ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
+ClientObituary(edict_t *self, edict_t *inflictor /* unused */,
+		edict_t *attacker)
 {
 	int mod;
 	char *message;
 	char *message2;
 	qboolean ff;
 
-	if (coop->value && attacker->client)
+	if (!self || !inflictor)
+	{
+		return;
+	}
+
+	if (coop->value && attacker && attacker->client)
 	{
 		meansOfDeath |= MOD_FRIENDLY_FIRE;
 	}
@@ -183,7 +245,11 @@ ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
 				case MOD_HG_SPLASH:
 				case MOD_G_SPLASH:
 
-					if (IsFemale(self))
+					if (IsNeutral(self))
+					{
+						message = "tripped on its own grenade";
+					}
+					else if (IsFemale(self))
 					{
 						message = "tripped on her own grenade";
 					}
@@ -195,7 +261,11 @@ ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
 					break;
 				case MOD_R_SPLASH:
 
-					if (IsFemale(self))
+					if (IsNeutral(self))
+					{
+						message = "blew itself up";
+					}
+					else if (IsFemale(self))
 					{
 						message = "blew herself up";
 					}
@@ -210,7 +280,11 @@ ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
 					break;
 				default:
 
-					if (IsFemale(self))
+					if (IsNeutral(self))
+					{
+						message = "killed itself";
+					}
+					else if (IsFemale(self))
 					{
 						message = "killed herself";
 					}
@@ -348,15 +422,18 @@ ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
 	}
 }
 
-void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf);
-
 void
 TossClientWeapon(edict_t *self)
 {
-	gitem_t *item;
+	const gitem_t *item;
 	edict_t *drop;
 	qboolean quad;
 	float spread;
+
+	if (!self)
+	{
+		return;
+	}
 
 	if (!deathmatch->value)
 	{
@@ -420,6 +497,11 @@ LookAtKiller(edict_t *self, edict_t *inflictor, edict_t *attacker)
 {
 	vec3_t dir;
 
+	if (!self)
+	{
+		return;
+	}
+
 	if (attacker && (attacker != world) && (attacker != self))
 	{
 		VectorSubtract(attacker->s.origin, self->s.origin, dir);
@@ -460,9 +542,14 @@ LookAtKiller(edict_t *self, edict_t *inflictor, edict_t *attacker)
 
 void
 player_die(edict_t *self, edict_t *inflictor, edict_t *attacker,
-		int damage, vec3_t point)
+		int damage, const vec3_t point /* unused */)
 {
 	int n;
+
+	if (!self || !inflictor || !attacker)
+	{
+		return;
+	}
 
 	VectorClear(self->avelocity);
 
@@ -596,6 +683,11 @@ InitClientPersistant(gclient_t *client)
 {
 	gitem_t *item;
 
+	if (!client)
+	{
+		return;
+	}
+
 	memset(&client->pers, 0, sizeof(client->pers));
 
 	item = FindItem("Blaster");
@@ -626,6 +718,11 @@ InitClientResp(gclient_t *client)
 {
 	int ctf_team = client->resp.ctf_team;
 	qboolean id_state = client->resp.id_state;
+
+	if (!client)
+	{
+		return;
+	}
 
 	memset(&client->resp, 0, sizeof(client->resp));
 
@@ -674,9 +771,14 @@ SaveClientData(void)
 	}
 }
 
-void
+static void
 FetchClientEntData(edict_t *ent)
 {
+	if (!ent)
+	{
+		return;
+	}
+
 	ent->health = ent->client->pers.health;
 	ent->max_health = ent->client->pers.max_health;
 	ent->flags |= ent->client->pers.savedFlags;
@@ -701,6 +803,11 @@ PlayersRangeFromSpot(edict_t *spot)
 	vec3_t v;
 	int n;
 	float playerdistance;
+
+	if (!spot)
+	{
+		return 0.0;
+	}
 
 	bestplayerdistance = 9999999;
 
@@ -832,7 +939,7 @@ SelectFarthestDeathmatchSpawnPoint(void)
 	return spot;
 }
 
-edict_t *
+static edict_t *
 SelectDeathmatchSpawnPoint(void)
 {
 	if ((int)(dmflags->value) & DF_SPAWN_FARTHEST)
@@ -845,12 +952,16 @@ SelectDeathmatchSpawnPoint(void)
 	}
 }
 
-edict_t *
+static edict_t *
 SelectCoopSpawnPoint(edict_t *ent)
 {
 	int index;
 	edict_t *spot = NULL;
-	char *target;
+
+	if (!ent)
+	{
+		return NULL;
+	}
 
 	index = ent->client - game.clients;
 
@@ -865,6 +976,8 @@ SelectCoopSpawnPoint(edict_t *ent)
 	/* assume there are four coop spots at each spawnpoint */
 	while (1)
 	{
+		const char *target;
+
 		spot = G_Find(spot, FOFS(classname), "info_player_coop");
 
 		if (!spot)
@@ -977,10 +1090,16 @@ InitBodyQue(void)
 }
 
 void
-body_die(edict_t *self, edict_t *inflictor, edict_t *attacker,
-		int damage, vec3_t point)
+body_die(edict_t *self, edict_t *inflictor /* unused */,
+		edict_t *attacker /* unused */, int damage,
+		const vec3_t point /* unused */)
 {
 	int n;
+
+	if (!self)
+	{
+		return;
+	}
 
 	if (self->health < -40)
 	{
@@ -1003,12 +1122,16 @@ CopyToBodyQue(edict_t *ent)
 {
 	edict_t *body;
 
+	if (!ent)
+	{
+		return;
+	}
+
 	/* grab a body que and cycle to the next one */
 	body = &g_edicts[(int)maxclients->value + level.body_que + 1];
 	level.body_que = (level.body_que + 1) % BODY_QUEUE_SIZE;
 
 	gi.unlinkentity(ent);
-
 	gi.unlinkentity(body);
 	body->s = ent->s;
 	body->s.number = body - g_edicts;
@@ -1033,8 +1156,14 @@ CopyToBodyQue(edict_t *ent)
 void
 respawn(edict_t *self)
 {
+	if (!self)
+	{
+		return;
+	}
+
 	if (deathmatch->value || coop->value)
 	{
+		/* spectator's don't leave bodies */
 		if (self->movetype != MOVETYPE_NOCLIP)
 		{
 			CopyToBodyQue(self);
@@ -1069,6 +1198,11 @@ respawn(edict_t *self)
 void
 PutClientInServer(edict_t *ent)
 {
+	if (!ent)
+	{
+		return;
+	}
+
 	vec3_t mins = {-16, -16, -24};
 	vec3_t maxs = {16, 16, 32};
 	int index;
@@ -1245,6 +1379,11 @@ PutClientInServer(edict_t *ent)
 void
 ClientBeginDeathmatch(edict_t *ent)
 {
+	if (!ent)
+	{
+		return;
+	}
+
 	G_InitEdict(ent);
 
 	InitClientResp(ent->client);
@@ -1279,6 +1418,11 @@ void
 ClientBegin(edict_t *ent)
 {
 	int i;
+
+	if (!ent)
+	{
+		return;
+	}
 
 	ent->client = game.clients + (ent - g_edicts - 1);
 
@@ -1349,6 +1493,11 @@ ClientUserinfoChanged(edict_t *ent, char *userinfo)
 	char *s;
 	int playernum;
 
+	if (!ent || !userinfo)
+	{
+		return;
+	}
+
 	/* check for malformed or illegal info strings */
 	if (!Info_Validate(userinfo))
 	{
@@ -1357,7 +1506,7 @@ ClientUserinfoChanged(edict_t *ent, char *userinfo)
 
 	/* set name */
 	s = Info_ValueForKey(userinfo, "name");
-	strncpy(ent->client->pers.netname, s, sizeof(ent->client->pers.netname) - 1);
+	Q_strlcpy(ent->client->pers.netname, s, sizeof(ent->client->pers.netname));
 
 	/* set skin */
 	s = Info_ValueForKey(userinfo, "skin");
@@ -1406,8 +1555,7 @@ ClientUserinfoChanged(edict_t *ent, char *userinfo)
 	}
 
 	/* save off the userinfo in case we want to check something later */
-	strncpy(ent->client->pers.userinfo, userinfo,
-			sizeof(ent->client->pers.userinfo) - 1);
+	Q_strlcpy(ent->client->pers.userinfo, userinfo, sizeof(ent->client->pers.userinfo));
 }
 
 /*
@@ -1422,6 +1570,11 @@ qboolean
 ClientConnect(edict_t *ent, char *userinfo)
 {
 	char *value;
+
+	if (!ent || !userinfo)
+	{
+		return false;
+	}
 
 	/* check to see if they are on the banned IP list */
 	value = Info_ValueForKey(userinfo, "ip");
@@ -1482,6 +1635,11 @@ ClientDisconnect(edict_t *ent)
 {
 	int playernum;
 
+	if (!ent)
+	{
+		return;
+	}
+
 	if (!ent->client)
 	{
 		return;
@@ -1511,13 +1669,13 @@ ClientDisconnect(edict_t *ent)
 
 /* ============================================================== */
 
-edict_t *pm_passent;
+static edict_t *pm_passent;
 
 /*
- * pmove doesn't need to know about
- * passent and contentmask
+ * pmove doesn't need to know
+ * about passent and contentmask
  */
-trace_t
+static trace_t
 PM_trace(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 {
 	if (pm_passent->health > 0)
@@ -1535,6 +1693,11 @@ CheckBlock(void *b, int c)
 {
 	int v, i;
 
+	if (!b)
+	{
+		return 0;
+	}
+
 	v = 0;
 
 	for (i = 0; i < c; i++)
@@ -1549,6 +1712,11 @@ void
 PrintPmove(pmove_t *pm)
 {
 	unsigned c1, c2;
+
+	if (!pm)
+	{
+		return;
+	}
 
 	c1 = CheckBlock(&pm->s, sizeof(pm->s));
 	c2 = CheckBlock(&pm->cmd, sizeof(pm->cmd));
@@ -1566,6 +1734,11 @@ ClientThink(edict_t *ent, usercmd_t *ucmd)
 	edict_t *other;
 	int i, j;
 	pmove_t pm;
+
+	if (!ent || !ucmd)
+	{
+		return;
+	}
 
 	level.current_entity = ent;
 	client = ent->client;
@@ -1774,6 +1947,11 @@ ClientBeginServerFrame(edict_t *ent)
 	gclient_t *client;
 	int buttonMask;
 
+	if (!ent)
+	{
+		return;
+	}
+
 	if (level.intermissiontime)
 	{
 		return;
@@ -1831,4 +2009,3 @@ ClientBeginServerFrame(edict_t *ent)
 
 	client->latched_buttons = 0;
 }
-

@@ -28,18 +28,23 @@
 #include "monster/player.h"
 
 static char *
-ClientTeam(edict_t *ent, char* value)
+ClientTeam(const edict_t *ent, char* value, size_t val_len)
 {
 	char *p;
 
 	value[0] = 0;
+
+	if (!ent)
+	{
+		return value;
+	}
 
 	if (!ent->client)
 	{
 		return value;
 	}
 
-	strcpy(value, Info_ValueForKey(ent->client->pers.userinfo, "skin"));
+	Q_strlcpy(value, Info_ValueForKey(ent->client->pers.userinfo, "skin"), val_len);
 	p = strchr(value, '/');
 
 	if (!p)
@@ -57,18 +62,23 @@ ClientTeam(edict_t *ent, char* value)
 }
 
 qboolean
-OnSameTeam(edict_t *ent1, edict_t *ent2)
+OnSameTeam(const edict_t *ent1, const edict_t *ent2)
 {
 	char ent1Team[512];
 	char ent2Team[512];
+
+	if (!ent1 || !ent2)
+	{
+		return false;
+	}
 
 	if (!((int)(dmflags->value) & (DF_MODELTEAMS | DF_SKINTEAMS)))
 	{
 		return false;
 	}
 
-	ClientTeam(ent1, ent1Team);
-	ClientTeam(ent2, ent2Team);
+	ClientTeam(ent1, ent1Team, sizeof(ent1Team));
+	ClientTeam(ent2, ent2Team, sizeof(ent2Team));
 
 	if (ent1Team[0] != '\0' && strcmp(ent1Team, ent2Team) == 0)
 	{
@@ -196,7 +206,7 @@ ValidateSelectedItem(edict_t *ent)
 /*
  * Give items to a client
  */
-void
+static void
 Cmd_Give_f(edict_t *ent)
 {
 	char *name;
@@ -206,9 +216,14 @@ Cmd_Give_f(edict_t *ent)
 	qboolean give_all;
 	edict_t *it_ent;
 
+	if (!ent)
+	{
+		return;
+	}
+
 	if (deathmatch->value && !sv_cheats->value)
 	{
-		gi.cprintf( ent, PRINT_HIGH,
+		gi.cprintf(ent, PRINT_HIGH,
 				"You must run the server with '+set cheats 1' to enable this command.\n");
 		return;
 	}
@@ -294,7 +309,7 @@ Cmd_Give_f(edict_t *ent)
 
 	if (give_all || (Q_stricmp(name, "armor") == 0))
 	{
-		gitem_armor_t *info;
+		const gitem_armor_t *info;
 
 		it = FindItem("Jacket Armor");
 		ent->client->pers.inventory[ITEM_INDEX(it)] = 0;
@@ -403,14 +418,19 @@ Cmd_Give_f(edict_t *ent)
 /*
  * Sets client to godmode
  */
-void
+static void
 Cmd_God_f(edict_t *ent)
 {
 	char *msg;
 
+	if (!ent)
+	{
+		return;
+	}
+
 	if (deathmatch->value && !sv_cheats->value)
 	{
-		gi.cprintf( ent, PRINT_HIGH,
+		gi.cprintf(ent, PRINT_HIGH,
 				"You must run the server with '+set cheats 1' to enable this command.\n");
 		return;
 	}
@@ -432,14 +452,19 @@ Cmd_God_f(edict_t *ent)
 /*
  * Sets client to notarget
  */
-void
+static void
 Cmd_Notarget_f(edict_t *ent)
 {
 	char *msg;
 
+	if (!ent)
+	{
+		return;
+	}
+
 	if (deathmatch->value && !sv_cheats->value)
 	{
-		gi.cprintf( ent, PRINT_HIGH,
+		gi.cprintf(ent, PRINT_HIGH,
 				"You must run the server with '+set cheats 1' to enable this command.\n");
 		return;
 	}
@@ -458,14 +483,22 @@ Cmd_Notarget_f(edict_t *ent)
 	gi.cprintf(ent, PRINT_HIGH, msg);
 }
 
-void
+/*
+ * argv(0) noclip
+ */
+static void
 Cmd_Noclip_f(edict_t *ent)
 {
 	char *msg;
 
+	if (!ent)
+	{
+		return;
+	}
+
 	if (deathmatch->value && !sv_cheats->value)
 	{
-		gi.cprintf( ent, PRINT_HIGH,
+		gi.cprintf(ent, PRINT_HIGH,
 				"You must run the server with '+set cheats 1' to enable this command.\n");
 		return;
 	}
@@ -487,12 +520,17 @@ Cmd_Noclip_f(edict_t *ent)
 /*
  * Use an inventory item
  */
-void
+static void
 Cmd_Use_f(edict_t *ent)
 {
 	int index;
 	gitem_t *it;
 	char *s;
+
+	if (!ent)
+	{
+		return;
+	}
 
 	s = gi.args();
 	it = FindItem(s);
@@ -523,12 +561,17 @@ Cmd_Use_f(edict_t *ent)
 /*
  * Drop an inventory item
  */
-void
+static void
 Cmd_Drop_f(edict_t *ent)
 {
 	int index;
-	gitem_t *it;
+	const gitem_t *it;
 	char *s;
+
+	if (!ent)
+	{
+		return;
+	}
 
 	if ((Q_stricmp(gi.args(), "tech") == 0) && ((it = CTFWhat_Tech(ent)) != NULL))
 	{
@@ -562,11 +605,16 @@ Cmd_Drop_f(edict_t *ent)
 	it->drop(ent, it);
 }
 
-void
+const void
 Cmd_Inven_f(edict_t *ent)
 {
 	int i;
 	gclient_t *cl;
+
+	if (!ent)
+	{
+		return;
+	}
 
 	cl = ent->client;
 
@@ -604,10 +652,15 @@ Cmd_Inven_f(edict_t *ent)
 	gi.unicast(ent, true);
 }
 
-void
+static void
 Cmd_InvUse_f(edict_t *ent)
 {
 	gitem_t *it;
+
+	if (!ent)
+	{
+		return;
+	}
 
 	if (ent->client->menu)
 	{
@@ -634,28 +687,18 @@ Cmd_InvUse_f(edict_t *ent)
 	it->use(ent, it);
 }
 
-void
-Cmd_LastWeap_f(edict_t *ent)
-{
-	gclient_t *cl;
-
-	cl = ent->client;
-
-	if (!cl->pers.weapon || !cl->pers.lastweapon)
-	{
-		return;
-	}
-
-	cl->pers.lastweapon->use(ent, cl->pers.lastweapon);
-}
-
-void
+static void
 Cmd_WeapPrev_f(edict_t *ent)
 {
 	gclient_t *cl;
 	int i, index;
 	gitem_t *it;
 	int selected_weapon;
+
+	if (!ent)
+	{
+		return;
+	}
 
 	cl = ent->client;
 
@@ -697,13 +740,18 @@ Cmd_WeapPrev_f(edict_t *ent)
 	}
 }
 
-void
+static void
 Cmd_WeapNext_f(edict_t *ent)
 {
 	gclient_t *cl;
 	int i, index;
-	gitem_t *it;
+	const gitem_t *it;
 	int selected_weapon;
+
+	if (!ent)
+	{
+		return;
+	}
 
 	cl = ent->client;
 
@@ -745,12 +793,17 @@ Cmd_WeapNext_f(edict_t *ent)
 	}
 }
 
-void
+static void
 Cmd_WeapLast_f(edict_t *ent)
 {
 	gclient_t *cl;
 	int index;
 	gitem_t *it;
+
+	if (!ent)
+	{
+		return;
+	}
 
 	cl = ent->client;
 
@@ -781,10 +834,15 @@ Cmd_WeapLast_f(edict_t *ent)
 	it->use(ent, it);
 }
 
-void
+static void
 Cmd_InvDrop_f(edict_t *ent)
 {
 	gitem_t *it;
+
+	if (!ent)
+	{
+		return;
+	}
 
 	ValidateSelectedItem(ent);
 
@@ -805,9 +863,14 @@ Cmd_InvDrop_f(edict_t *ent)
 	it->drop(ent, it);
 }
 
-void
+static void
 Cmd_Kill_f(edict_t *ent)
 {
+	if (!ent)
+	{
+		return;
+	}
+
 	if (ent->solid == SOLID_NOT)
 	{
 		return;
@@ -824,9 +887,14 @@ Cmd_Kill_f(edict_t *ent)
 	player_die(ent, ent, ent, 100000, vec3_origin);
 }
 
-void
+static void
 Cmd_PutAway_f(edict_t *ent)
 {
+	if (!ent)
+	{
+		return;
+	}
+
 	ent->client->showscores = false;
 	ent->client->showhelp = false;
 	ent->client->showinventory = false;
@@ -839,10 +907,15 @@ Cmd_PutAway_f(edict_t *ent)
 	ent->client->update_chase = true;
 }
 
-int
+static int
 PlayerSort(void const *a, void const *b)
 {
 	int anum, bnum;
+
+	if (!a || !b)
+	{
+		return 0;
+	}
 
 	anum = *(int *)a;
 	bnum = *(int *)b;
@@ -863,14 +936,19 @@ PlayerSort(void const *a, void const *b)
 	return 0;
 }
 
-void
+static void
 Cmd_Players_f(edict_t *ent)
 {
 	int i;
 	int count;
 	char small[64];
 	char large[1280];
-	int index[256];
+	int index[256] = {0};
+
+	if (!ent)
+	{
+		return;
+	}
 
 	count = 0;
 
@@ -896,22 +974,27 @@ Cmd_Players_f(edict_t *ent)
 				game.clients[index[i]].pers.netname);
 
 		if (strlen(small) + strlen(large) > sizeof(large) - 100)
-		{   
+		{
 			/* can't print all of them in one packet */
-			strcat(large, "...\n");
+			Q_strlcat(large, "...\n", sizeof(large));
 			break;
 		}
 
-		strcat(large, small);
+		Q_strlcat(large, small, sizeof(large));
 	}
 
 	gi.cprintf(ent, PRINT_HIGH, "%s\n%i players\n", large, count);
 }
 
-void
+static void
 Cmd_Wave_f(edict_t *ent)
 {
 	int i;
+
+	if (!ent)
+	{
+		return;
+	}
 
 	i = atoi(gi.argv(1));
 
@@ -1001,13 +1084,17 @@ CheckFlood(edict_t *ent)
 	return false;
 }
 
-void
+static void
 Cmd_Say_f(edict_t *ent, qboolean team, qboolean arg0)
 {
 	int j;
-	edict_t *other;
 	char *p;
 	char text[2048];
+
+	if (!ent)
+	{
+		return;
+	}
 
 	if ((gi.argc() < 2) && !arg0)
 	{
@@ -1030,9 +1117,9 @@ Cmd_Say_f(edict_t *ent, qboolean team, qboolean arg0)
 
 	if (arg0)
 	{
-		strcat(text, gi.argv(0));
-		strcat(text, " ");
-		strcat(text, gi.args());
+		Q_strlcat(text, gi.argv(0), sizeof(text));
+		Q_strlcat(text, " ", sizeof(text));
+		Q_strlcat(text, gi.args(), sizeof(text));
 	}
 	else
 	{
@@ -1044,7 +1131,7 @@ Cmd_Say_f(edict_t *ent, qboolean team, qboolean arg0)
 			p[strlen(p) - 1] = 0;
 		}
 
-		strcat(text, p);
+		Q_strlcat(text, p, sizeof(text));
 	}
 
 	/* don't let text be too long for malicious reasons */
@@ -1053,7 +1140,7 @@ Cmd_Say_f(edict_t *ent, qboolean team, qboolean arg0)
 		text[150] = 0;
 	}
 
-	strcat(text, "\n");
+	Q_strlcat(text, "\n", sizeof(text));
 
 	if (CheckFlood(ent))
 	{
@@ -1067,6 +1154,8 @@ Cmd_Say_f(edict_t *ent, qboolean team, qboolean arg0)
 
 	for (j = 1; j <= game.maxclients; j++)
 	{
+		edict_t *other;
+
 		other = &g_edicts[j];
 
 		if (!other->inuse)
@@ -1094,7 +1183,12 @@ Cmd_Say_f(edict_t *ent, qboolean team, qboolean arg0)
 void
 ClientCommand(edict_t *ent)
 {
-	char *cmd;
+	const char *cmd;
+
+	if (!ent)
+	{
+		return;
+	}
 
 	if (!ent->client)
 	{
@@ -1280,4 +1374,3 @@ ClientCommand(edict_t *ent)
 		Cmd_Say_f(ent, false, true);
 	}
 }
-
