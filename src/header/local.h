@@ -582,9 +582,19 @@ typedef struct
 extern field_t fields[];
 extern gitem_t itemlist[];
 
+/* player/client.c */
+void ClientBegin(edict_t *ent);
+void ClientDisconnect(edict_t *ent);
+void ClientUserinfoChanged(edict_t *ent, char *userinfo);
+qboolean ClientConnect(edict_t *ent, char *userinfo);
+void ClientThink(edict_t *ent, usercmd_t *cmd);
+void RunEntity(edict_t *ent);
+void G_RunFrame(void);
+
 /* g_cmds.c */
 qboolean CheckFlood(edict_t *ent);
 void Cmd_Help_f(edict_t *ent);
+void ClientCommand(edict_t *ent);
 void Cmd_Score_f(edict_t *ent);
 
 /* g_items.c */
@@ -741,7 +751,6 @@ void InitClientPersistant(gclient_t *client);
 void InitClientResp(gclient_t *client);
 void InitBodyQue(void);
 void ClientBeginServerFrame(edict_t *ent);
-void ClientUserinfoChanged(edict_t *ent, char *userinfo);
 
 /* g_player.c */
 void player_pain(edict_t *self, edict_t *other, float kick, int damage);
@@ -784,6 +793,14 @@ void EndDMLevel(void);
 
 /* g_svcmds.c */
 qboolean SV_FilterPacket(char *from);
+
+/* savegame */
+void InitGame(void);
+void ReadLevel(const char *filename);
+void WriteLevel(const char *filename);
+void ReadGame(const char *filename);
+void WriteGame(const char *filename, qboolean autosave);
+void SpawnEntities(const char *mapname, char *entities, const char *spawnpoint);
 
 /* ============================================================================ */
 
