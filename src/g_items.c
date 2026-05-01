@@ -147,7 +147,7 @@ DoRespawn(edict_t *ent)
 			{
 			}
 
-			choice = rand() % count;
+			choice = randk() % count;
 
 			for (count = 0, ent = master; count < choice; ent = ent->chain, count++)
 			{

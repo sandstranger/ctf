@@ -533,7 +533,7 @@ CTFAssignTeam(gclient_t *who)
 	{
 		who->resp.ctf_team = CTF_TEAM2;
 	}
-	else if (rand() & 1)
+	else if (randk() & 1)
 	{
 		who->resp.ctf_team = CTF_TEAM1;
 	}
@@ -617,7 +617,7 @@ SelectCTFSpawnPoint(edict_t *ent)
 		count -= 2;
 	}
 
-	selection = rand() % count;
+	selection = randk() % count;
 
 	spot = NULL;
 
@@ -1142,7 +1142,7 @@ CTFDeadDropFlag(edict_t *self)
 void
 CTFDrop_Flag(edict_t *ent, gitem_t *item)
 {
-	if (rand() & 1)
+	if (randk() & 1)
 	{
 		gi.cprintf(ent, PRINT_HIGH, "Only lusers drop flags.\n");
 	}
@@ -2346,7 +2346,7 @@ static edict_t *
 FindTechSpawn(void)
 {
 	edict_t *spot = NULL;
-	int i = rand() % 16;
+	int i = randk() % 16;
 
 	while (i--)
 	{
@@ -2406,8 +2406,8 @@ CTFDeadDropTech(edict_t *ent)
 			dropped = Drop_Item(ent, tech);
 
 			/* hack the velocity to make it bounce random */
-			dropped->velocity[0] = (rand() % 600) - 300;
-			dropped->velocity[1] = (rand() % 600) - 300;
+			dropped->velocity[0] = (randk() % 600) - 300;
+			dropped->velocity[1] = (randk() % 600) - 300;
 			dropped->nextthink = level.time + CTF_TECH_TIMEOUT;
 			dropped->think = TechThink;
 			dropped->owner = NULL;
@@ -2441,7 +2441,7 @@ SpawnTech(gitem_t *item, edict_t *spot)
 	ent->owner = ent;
 
 	angles[0] = 0;
-	angles[1] = rand() % 360;
+	angles[1] = randk() % 360;
 	angles[2] = 0;
 
 	AngleVectors(angles, forward, right, NULL);
@@ -3273,7 +3273,7 @@ SP_misc_ctf_banner(edict_t *ent)
 		ent->s.skinnum = 1;
 	}
 
-	ent->s.frame = rand() % 16;
+	ent->s.frame = randk() % 16;
 	gi.linkentity(ent);
 
 	ent->think = misc_ctf_banner_think;
@@ -3297,7 +3297,7 @@ SP_misc_ctf_small_banner(edict_t *ent)
 		ent->s.skinnum = 1;
 	}
 
-	ent->s.frame = rand() % 16;
+	ent->s.frame = randk() % 16;
 	gi.linkentity(ent);
 
 	ent->think = misc_ctf_banner_think;
@@ -3466,7 +3466,7 @@ CTFAssignGhost(edict_t *ent)
 
 	for ( ; ; )
 	{
-		ctfgame.ghosts[ghost].code = 10000 + (rand() % 90000);
+		ctfgame.ghosts[ghost].code = 10000 + (randk() % 90000);
 
 		for (i = 0; i < MAX_CLIENTS; i++)
 		{
@@ -3533,7 +3533,7 @@ CTFStartMatch(void)
 			ent->svflags = SVF_NOCLIENT;
 			ent->flags &= ~FL_GODMODE;
 
-			ent->client->respawn_time = level.time + 1.0 + ((rand() % 30) / 10.0);
+			ent->client->respawn_time = level.time + 1.0 + ((randk() % 30) / 10.0);
 			ent->client->ps.pmove.pm_type = PM_DEAD;
 			ent->client->anim_priority = ANIM_DEATH;
 			ent->s.frame = FRAME_death308 - 1;
@@ -4199,7 +4199,7 @@ CTFUpdateJoinMenu(edict_t *ent)
 		return CTF_TEAM2;
 	}
 
-	return (rand() & 1) ? CTF_TEAM1 : CTF_TEAM2;
+	return (randk() & 1) ? CTF_TEAM1 : CTF_TEAM2;
 }
 
 void

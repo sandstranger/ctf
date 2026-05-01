@@ -239,7 +239,7 @@ ThrowClientHead(edict_t *self, int damage)
 	vec3_t vd;
 	char *gibname;
 
-	if (rand() & 1)
+	if (randk() & 1)
 	{
 		gibname = "models/objects/gibs/head2/tris.md2";
 		self->s.skinnum = 1; /* second skin is player */
@@ -1391,7 +1391,7 @@ SP_misc_banner(edict_t *ent)
 	ent->movetype = MOVETYPE_NONE;
 	ent->solid = SOLID_NOT;
 	ent->s.modelindex = gi.modelindex("models/objects/banner/tris.md2");
-	ent->s.frame = rand() % 16;
+	ent->s.frame = randk() % 16;
 	gi.linkentity(ent);
 
 	ent->think = misc_banner_think;

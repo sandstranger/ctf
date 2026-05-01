@@ -496,12 +496,12 @@ extern int meansOfDeath;
 
 extern edict_t *g_edicts;
 
-#define FOFS(x) (size_t)&(((edict_t *)0)->x)
-#define STOFS(x) (size_t)&(((spawn_temp_t *)0)->x)
-#define LLOFS(x) (size_t)&(((level_locals_t *)0)->x)
-#define CLOFS(x) (size_t)&(((gclient_t *)0)->x)
+#define FOFS(x) (size_t)&(((edict_t *)NULL)->x)
+#define STOFS(x) (size_t)&(((spawn_temp_t *)NULL)->x)
+#define LLOFS(x) (size_t)&(((level_locals_t *)NULL)->x)
+#define CLOFS(x) (size_t)&(((gclient_t *)NULL)->x)
 
-#define random() ((rand() & 0x7fff) / ((float)0x7fff))
+#define random() ((randk() & 0x7fff) / ((float)0x7fff))
 #define crandom() (2.0 * (random() - 0.5))
 
 extern cvar_t *maxentities;
@@ -573,8 +573,8 @@ typedef enum
 
 typedef struct
 {
-	char *name;
-	int ofs;
+	const char *name;
+	size_t ofs;
 	fieldtype_t type;
 	int flags;
 } field_t;
