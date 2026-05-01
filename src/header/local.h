@@ -595,7 +595,7 @@ void ClientBegin(edict_t *ent);
 void ClientDisconnect(edict_t *ent);
 void ClientUserinfoChanged(edict_t *ent, char *userinfo);
 qboolean ClientConnect(edict_t *ent, char *userinfo);
-void ClientThink(edict_t *ent, usercmd_t *cmd);
+void ClientThink(edict_t *ent, usercmd_t *ucmd);
 void RunEntity(edict_t *ent);
 void G_RunFrame(void);
 

@@ -244,7 +244,7 @@ Cmd_Give_f(edict_t *ent)
 		if (gi.argc() == 3)
 		{
 			ent->health = atoi(gi.argv(2));
-		    ent->health = ent->health < 1 ? 1 : ent->health; 
+		    ent->health = ent->health < 1 ? 1 : ent->health;
 		}
 		else
 		{
@@ -605,7 +605,7 @@ Cmd_Drop_f(edict_t *ent)
 	it->drop(ent, it);
 }
 
-const void
+static void
 Cmd_Inven_f(edict_t *ent)
 {
 	int i;

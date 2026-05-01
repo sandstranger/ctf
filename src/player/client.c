@@ -114,7 +114,7 @@ player_pain(edict_t *self /* unused */, edict_t *other /* unused */,
 }
 
 static qboolean
-IsFemale(edict_t *ent)
+IsFemale(const edict_t *ent)
 {
 	char *info;
 
@@ -139,7 +139,7 @@ IsFemale(edict_t *ent)
 }
 
 static qboolean
-IsNeutral(edict_t *ent)
+IsNeutral(const edict_t *ent)
 {
 	char *info;
 
@@ -170,7 +170,7 @@ IsNeutral(edict_t *ent)
 }
 
 void
-ClientObituary(edict_t *self, edict_t *inflictor /* unused */,
+ClientObituary(edict_t *self, const edict_t *inflictor /* unused */,
 		edict_t *attacker)
 {
 	int mod;
@@ -716,13 +716,16 @@ InitClientPersistant(gclient_t *client)
 void
 InitClientResp(gclient_t *client)
 {
-	int ctf_team = client->resp.ctf_team;
-	qboolean id_state = client->resp.id_state;
+	int ctf_team;
+	qboolean id_state;
 
 	if (!client)
 	{
 		return;
 	}
+
+	ctf_team = client->resp.ctf_team;
+	id_state = client->resp.id_state;
 
 	memset(&client->resp, 0, sizeof(client->resp));
 
