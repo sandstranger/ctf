@@ -129,7 +129,7 @@ char *CTFTeamName(int team);
 char *CTFOtherTeamName(int team);
 void CTFAssignSkin(edict_t *ent, char *s);
 void CTFAssignTeam(gclient_t *who);
-edict_t *SelectCTFSpawnPoint(edict_t *ent);
+edict_t *SelectCTFSpawnPoint(const edict_t *ent);
 qboolean CTFPickup_Flag(edict_t *ent, edict_t *other);
 void CTFDrop_Flag(edict_t *ent, const gitem_t *item);
 void CTFEffects(edict_t *player);

@@ -31,6 +31,7 @@ void SP_misc_teleporter_dest(edict_t *ent);
 
 /*
  * QUAKED info_player_start (1 0 0) (-16 -16 -24) (16 16 32)
+ *
  * The normal starting point for a level.
  */
 void
@@ -50,6 +51,7 @@ SP_info_player_start(edict_t *self)
 
 /*
  * QUAKED info_player_deathmatch (1 0 1) (-16 -16 -24) (16 16 32)
+ *
  * potential spawning position for deathmatch games
  */
 void
@@ -73,7 +75,6 @@ SP_info_player_deathmatch(edict_t *self)
  * QUAKED info_player_coop (1 0 1) (-16 -16 -24) (16 16 32)
  * potential spawning position for coop games
  */
-
 void
 SP_info_player_coop(edict_t *self)
 {
@@ -96,8 +97,12 @@ SP_info_player_coop(edict_t *self)
  * roll as well as yaw.  'pitch yaw roll'
  */
 void
-SP_info_player_intermission(edict_t *ent)
+SP_info_player_intermission(edict_t *self)
 {
+	/* This function cannot be removed
+	 * since the info_player_intermission
+	 * needs a callback function. Like
+	 * every entity. */
 }
 
 /* ======================================================================= */
@@ -956,7 +961,7 @@ SelectDeathmatchSpawnPoint(void)
 }
 
 static edict_t *
-SelectCoopSpawnPoint(edict_t *ent)
+SelectCoopSpawnPoint(const edict_t *ent)
 {
 	int index;
 	edict_t *spot = NULL;
@@ -1014,9 +1019,17 @@ SelectCoopSpawnPoint(edict_t *ent)
  * Chooses a player start, deathmatch start, coop start, etc
  */
 void
-SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles)
+SelectSpawnPoint(const edict_t *ent, vec3_t origin, vec3_t angles)
 {
 	edict_t *spot = NULL;
+
+	VectorClear(origin);
+	VectorClear(angles);
+
+	if (!ent)
+	{
+		return;
+	}
 
 	if (deathmatch->value)
 	{
@@ -1066,6 +1079,52 @@ SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles)
 			if (!spot)
 			{
 				gi.error("Couldn't find spawn point %s\n", game.spawnpoint);
+				return;
+			}
+		}
+	}
+
+	/* If we are in coop and we didn't find a coop
+	   spawnpoint due to map bugs (not correctly
+	   connected or the map was loaded via console
+	   and thus no previously map is known to the
+	   client) use one in 550 units radius. */
+	if (coop->value)
+	{
+		int index;
+
+		index = ent->client - game.clients;
+
+		if (Q_stricmp(spot->classname, "info_player_start") == 0 && index != 0)
+		{
+			int counter = 0;
+
+			while (counter < 3)
+			{
+				edict_t *coopspot = NULL;
+				vec3_t d;
+
+				coopspot = G_Find(coopspot, FOFS(classname), "info_player_coop");
+
+				if (!coopspot)
+				{
+					break;
+				}
+
+				VectorSubtract(coopspot->s.origin, spot->s.origin, d);
+
+				if ((VectorLength(d) < 550))
+				{
+					if (index == counter)
+					{
+						spot = coopspot;
+						break;
+					}
+					else
+					{
+						counter++;
+					}
+				}
 			}
 		}
 	}
@@ -1080,15 +1139,19 @@ SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles)
 void
 InitBodyQue(void)
 {
-	int i;
-	edict_t *ent;
-
-	level.body_que = 0;
-
-	for (i = 0; i < BODY_QUEUE_SIZE; i++)
+	if (deathmatch->value || coop->value)
 	{
-		ent = G_Spawn();
-		ent->classname = "bodyque";
+		int i;
+
+		level.body_que = 0;
+
+		for (i = 0; i < BODY_QUEUE_SIZE; i++)
+		{
+			edict_t *ent;
+
+			ent = G_Spawn();
+			ent->classname = "bodyque";
+		}
 	}
 }
 
@@ -1106,7 +1169,8 @@ body_die(edict_t *self, edict_t *inflictor /* unused */,
 
 	if (self->health < -40)
 	{
-		gi.sound(self, CHAN_BODY, gi.soundindex( "misc/udeath.wav"), 1, ATTN_NORM, 0);
+		gi.sound(self, CHAN_BODY, gi.soundindex(
+						"misc/udeath.wav"), 1, ATTN_NORM, 0);
 
 		for (n = 0; n < 4; n++)
 		{
@@ -1194,9 +1258,8 @@ respawn(edict_t *self)
 /* ============================================================== */
 
 /*
- * Called when a player connects
- * to a server or respawns in
- * a deathmatch.
+ * Called when a player connects to
+ * a server or respawns in a deathmatch.
  */
 void
 PutClientInServer(edict_t *ent)
