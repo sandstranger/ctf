@@ -22,7 +22,7 @@
  * Weapon support functions.
  *
  * =======================================================================
- */ 
+ */
 
 #include "header/local.h"
 
@@ -84,13 +84,13 @@ fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
 
 	if ((aim[1] > self->mins[0]) && (aim[1] < self->maxs[0]))
 	{
-		/* the hit is straight on so back the 
+		/* the hit is straight on so back the
 		   range up to the edge of their bbox */
 		range -= self->enemy->maxs[0];
 	}
 	else
 	{
-		/* this is a side hit so adjust the "right" 
+		/* this is a side hit so adjust the "right"
 		   value out to the edge of their bbox */
 		if (aim[1] < 0)
 		{
@@ -150,7 +150,7 @@ fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
 }
 
 /*
- * This is an internal support routine 
+ * This is an internal support routine
  * used for bullet/pellet based weapons.
  */
 static void
@@ -279,7 +279,7 @@ fire_lead(edict_t *self, vec3_t start, vec3_t aimdir, int damage,
 		}
 	}
 
-	/* if went through water, determine where 
+	/* if went through water, determine where
 	   the end and make a bubble trail */
 	if (water)
 	{
@@ -310,7 +310,7 @@ fire_lead(edict_t *self, vec3_t start, vec3_t aimdir, int damage,
 }
 
 /*
- * Fires a single round.  Used for machinegun and 
+ * Fires a single round.  Used for machinegun and
  * chaingun.  Would be fine for pistols, rifles, etc....
  */
 void
@@ -322,7 +322,7 @@ fire_bullet(edict_t *self, vec3_t start, vec3_t aimdir, int damage,
 }
 
 /*
- * Shoots shotgun pellets. Used by 
+ * Shoots shotgun pellets. Used by
  * shotgun and super shotgun.
  */
 void
@@ -339,11 +339,11 @@ fire_shotgun(edict_t *self, vec3_t start, vec3_t aimdir, int damage,
 }
 
 /*
- * Fires a single blaster bolt. Used 
+ * Fires a single blaster bolt. Used
  * by the blaster and hyper blaster.
  */
 void
-blaster_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
+blaster_touch(edict_t *self, edict_t *other, const cplane_t *plane, const csurface_t *surf)
 {
 	int mod;
 
@@ -533,7 +533,7 @@ Grenade_Explode(edict_t *ent)
 }
 
 static void
-Grenade_Touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
+Grenade_Touch(edict_t *ent, edict_t *other, const cplane_t *plane, const csurface_t *surf)
 {
 	if (other == ent->owner)
 	{
@@ -665,7 +665,7 @@ fire_grenade2(edict_t *self, vec3_t start, vec3_t aimdir, int damage,
 }
 
 void
-rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
+rocket_touch(edict_t *ent, edict_t *other, const cplane_t *plane, const csurface_t *surf)
 {
 	vec3_t origin;
 	int n;
@@ -702,7 +702,7 @@ rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 			if ((surf) && !(surf->flags &
 				(SURF_WARP | SURF_TRANS33 | SURF_TRANS66 | SURF_FLOWING)))
 			{
-				n = rand() % 5;
+				n = randk() % 5;
 
 				while (n--)
 				{
@@ -903,7 +903,7 @@ bfg_explode(edict_t *self)
 }
 
 void
-bfg_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
+bfg_touch(edict_t *self, edict_t *other, const cplane_t *plane, const csurface_t *surf)
 {
 	if (other == self->owner)
 	{

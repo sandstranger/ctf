@@ -85,7 +85,7 @@ cvar_t *warp_list;
 cvar_t *warn_unbalanced;
 
 /* Index for various CTF pics, this saves us
- * from calling gi.imageindex all the time 
+ * from calling gi.imageindex all the time
  * and saves a few CPU cycles since we don't
  * have to do a bunch of string compares all
  * the time. * These are set in CTFPrecache()
@@ -249,7 +249,7 @@ stuffcmd(edict_t *ent, char *s)
 /*--------------------------------------------------------------------------*/
 
 /*
- * Returns entities that have 
+ * Returns entities that have
  * origins within a spherical area
  */
 static edict_t *
@@ -533,7 +533,7 @@ CTFAssignTeam(gclient_t *who)
 	{
 		who->resp.ctf_team = CTF_TEAM2;
 	}
-	else if (rand() & 1)
+	else if (randk() & 1)
 	{
 		who->resp.ctf_team = CTF_TEAM1;
 	}
@@ -548,7 +548,7 @@ CTFAssignTeam(gclient_t *who)
  * two points closest to other players
  */
 edict_t *
-SelectCTFSpawnPoint(edict_t *ent)
+SelectCTFSpawnPoint(const edict_t *ent)
 {
 	edict_t *spot, *spot1, *spot2;
 	int count = 0;
@@ -617,7 +617,7 @@ SelectCTFSpawnPoint(edict_t *ent)
 		count -= 2;
 	}
 
-	selection = rand() % count;
+	selection = randk() % count;
 
 	spot = NULL;
 
@@ -640,7 +640,7 @@ SelectCTFSpawnPoint(edict_t *ent)
 /*
  * Calculate the bonuses for flag defense,
  * flag carrier defense, etc. Note that b
- * onuses are not cumaltive. You get one, 
+ * onuses are not cumaltive. You get one,
  * they are in importance order.
  */
 void
@@ -705,7 +705,7 @@ CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
 				CTF_FRAG_CARRIER_BONUS);
 
 		/* the target had the flag, clear
-		   the hurt carrier field on the 
+		   the hurt carrier field on the
 		   other team */
 		for (i = 1; i <= maxclients->value; i++)
 		{
@@ -725,8 +725,8 @@ CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
 		 CTF_CARRIER_DANGER_PROTECT_TIMEOUT) &&
 		!attacker->client->pers.inventory[ITEM_INDEX(flag_item)])
 	{
-		/* attacker is on the same team 
-		   as the flag carrier and 
+		/* attacker is on the same team
+		   as the flag carrier and
 		   fragged a guy who hurt our
 		   flag carrier */
 		attacker->client->resp.score += CTF_CARRIER_DANGER_PROTECT_BONUS;
@@ -743,8 +743,8 @@ CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
 		return;
 	}
 
-	/* flag and flag carrier area defense bonuses 
-	   we have to find the flag and carrier entities 
+	/* flag and flag carrier area defense bonuses
+	   we have to find the flag and carrier entities
 	   find the flag */
 	switch (attacker->client->resp.ctf_team)
 	{
@@ -940,7 +940,7 @@ CTFPickup_Flag(edict_t *ent, edict_t *other)
 		return false;
 	}
 
-	/* same team, if the flag at base, 
+	/* same team, if the flag at base,
 	   check to he has the enemy flag */
 	if (ctf_team == CTF_TEAM1)
 	{
@@ -1058,9 +1058,9 @@ CTFPickup_Flag(edict_t *ent, edict_t *other)
 	other->client->pers.inventory[ITEM_INDEX(flag_item)] = 1;
 	other->client->resp.ctf_flagsince = level.time;
 
-	/* pick up the flag 
-	   if it's not a dropped flag, 
-	   we just make is disappear 
+	/* pick up the flag
+	   if it's not a dropped flag,
+	   we just make is disappear
 	   if it's dropped, it will be
 	   removed by the pickup caller */
 	if (!(ent->spawnflags & DROPPED_ITEM))
@@ -1075,7 +1075,7 @@ CTFPickup_Flag(edict_t *ent, edict_t *other)
 
 static void
 CTFDropFlagTouch(edict_t *ent, edict_t *other,
-		cplane_t *plane, csurface_t *surf)
+		const cplane_t *plane, const csurface_t *surf)
 {
 	/* owner (who dropped us) can't touch for two secs */
 	if ((other == ent->owner) &&
@@ -1090,8 +1090,8 @@ CTFDropFlagTouch(edict_t *ent, edict_t *other,
 static void
 CTFDropFlagThink(edict_t *ent)
 {
-	/* auto return the flag 
-	   reset flag will remove 
+	/* auto return the flag
+	   reset flag will remove
 	   ourselves */
 	if (strcmp(ent->classname, "item_flag_team1") == 0)
 	{
@@ -1107,7 +1107,7 @@ CTFDropFlagThink(edict_t *ent)
 	}
 }
 
-/* 
+/*
  * Called from PlayerDie, to drop
  * the flag from a dying player
  */
@@ -1140,9 +1140,9 @@ CTFDeadDropFlag(edict_t *self)
 }
 
 void
-CTFDrop_Flag(edict_t *ent, gitem_t *item)
+CTFDrop_Flag(edict_t *ent, const gitem_t *item)
 {
-	if (rand() & 1)
+	if (randk() & 1)
 	{
 		gi.cprintf(ent, PRINT_HIGH, "Only lusers drop flags.\n");
 	}
@@ -1241,8 +1241,8 @@ CTFEffects(edict_t *player)
 	}
 }
 
-/* 
- * Called when we enter the intermission 
+/*
+ * Called when we enter the intermission
  */
 void
 CTFCalcScores(void)
@@ -1406,7 +1406,7 @@ SetCTFStats(edict_t *ent)
 	/* if during intermission, we must blink
 	   the team header of the winning team */
 	if (level.intermissiontime && (level.framenum & 8))   /* blink 1/8th second */
-	{   
+	{
 		/* note that ctfgame.total[12] is
 		   set when we go to intermission */
 		if (ctfgame.team1 > ctfgame.team2)
@@ -1449,9 +1449,9 @@ SetCTFStats(edict_t *ent)
 	}
 
 	/* figure out what icon to display for team logos
-	   three states: 
+	   three states:
 	     flag at base
-	     flag taken 
+	     flag taken
 	     flag dropped */
 	p1 = imageindex_i_ctf1;
 	e = G_Find(NULL, FOFS(classname), "item_flag_team1");
@@ -1462,7 +1462,7 @@ SetCTFStats(edict_t *ent)
 		{
 			int i;
 
-			/* not at base 
+			/* not at base
 			  check if on player */
 			p1 = imageindex_i_ctf1d; /* default to dropped */
 
@@ -1492,7 +1492,7 @@ SetCTFStats(edict_t *ent)
 		{
 			int i;
 
-			/* not at base 
+			/* not at base
 			   check if on player */
 			p2 = imageindex_i_ctf2d; /* default to dropped */
 
@@ -1643,7 +1643,7 @@ CTFResetGrapple(edict_t *self)
 }
 
 void
-CTFGrappleTouch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
+CTFGrappleTouch(edict_t *self, edict_t *other, const cplane_t *plane, const csurface_t *surf)
 {
 	float volume = 1.0;
 
@@ -1706,8 +1706,8 @@ CTFGrappleTouch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf
 	gi.multicast(self->s.origin, MULTICAST_PVS);
 }
 
-/* 
- * Draw beam between grapple and self 
+/*
+ * Draw beam between grapple and self
  */
 void
 CTFGrappleDrawCable(edict_t *self)
@@ -1745,8 +1745,8 @@ CTFGrappleDrawCable(edict_t *self)
 
 void SV_AddGravity(edict_t *ent);
 
-/* 
- * pull the player toward the grapple 
+/*
+ * pull the player toward the grapple
  */
 void
 CTFGrapplePull(edict_t *self)
@@ -1811,10 +1811,10 @@ CTFGrapplePull(edict_t *self)
 
 	if (self->owner->client->ctf_grapplestate > CTF_GRAPPLE_STATE_FLY)
 	{
-		/* pull player toward grapple 
+		/* pull player toward grapple
 		   this causes icky stuff with prediction, we need to extend/
 		   the prediction layer to include two new fields in the player/
-		   move stuff: a point and a velocity. The client should add 
+		   move stuff: a point and a velocity. The client should add
 		   that velociy in the direction of the point */
 		vec3_t forward, up;
 
@@ -2040,7 +2040,7 @@ CTFTeam_f(edict_t *ent)
 
 		/* add a teleportation effect */
 		ent->s.event = EV_PLAYER_TELEPORT;
-		
+
 		/* hold in place briefly */
 		ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
 		ent->client->ps.pmove.pm_time = 14;
@@ -2127,7 +2127,7 @@ CTFScoreboardMessage(edict_t *ent, edict_t *killer)
 		total[team]++;
 	}
 
-	/* print level name and exit rules 
+	/* print level name and exit rules
 	   add the clients in sorted order */
 	*string = 0;
 	len = 0;
@@ -2340,13 +2340,13 @@ CTFPickup_Tech(edict_t *ent, edict_t *other)
 	return true;
 }
 
-static void SpawnTech(gitem_t *item, edict_t *spot);
+static void SpawnTech(const gitem_t *item, edict_t *spot);
 
 static edict_t *
 FindTechSpawn(void)
 {
 	edict_t *spot = NULL;
-	int i = rand() % 16;
+	int i = randk() % 16;
 
 	while (i--)
 	{
@@ -2379,7 +2379,7 @@ TechThink(edict_t *tech)
 }
 
 void
-CTFDrop_Tech(edict_t *ent, gitem_t *item)
+CTFDrop_Tech(edict_t *ent, const gitem_t *item)
 {
 	edict_t *tech;
 
@@ -2406,8 +2406,8 @@ CTFDeadDropTech(edict_t *ent)
 			dropped = Drop_Item(ent, tech);
 
 			/* hack the velocity to make it bounce random */
-			dropped->velocity[0] = (rand() % 600) - 300;
-			dropped->velocity[1] = (rand() % 600) - 300;
+			dropped->velocity[0] = (randk() % 600) - 300;
+			dropped->velocity[1] = (randk() % 600) - 300;
 			dropped->nextthink = level.time + CTF_TECH_TIMEOUT;
 			dropped->think = TechThink;
 			dropped->owner = NULL;
@@ -2419,7 +2419,7 @@ CTFDeadDropTech(edict_t *ent)
 }
 
 static void
-SpawnTech(gitem_t *item, edict_t *spot)
+SpawnTech(const gitem_t *item, edict_t *spot)
 {
 	edict_t *ent;
 	vec3_t forward, right;
@@ -2441,7 +2441,7 @@ SpawnTech(gitem_t *item, edict_t *spot)
 	ent->owner = ent;
 
 	angles[0] = 0;
-	angles[1] = rand() % 360;
+	angles[1] = randk() % 360;
 	angles[2] = 0;
 
 	AngleVectors(angles, forward, right, NULL);
@@ -2482,8 +2482,8 @@ SpawnTechs(edict_t *ent)
 	}
 }
 
-/* 
- * frees the passed edict! 
+/*
+ * frees the passed edict!
  */
 void
 CTFRespawnTech(edict_t *ent)
@@ -2763,10 +2763,10 @@ CTFHasRegeneration(edict_t *ent)
  * ======================================================================
  */
 
-/* 
+/*
  * This array is in 'importance order',
- * it indicates what items are more 
- * important when reporting their names. 
+ * it indicates what items are more
+ * important when reporting their names.
  */
 struct
 {
@@ -2875,7 +2875,7 @@ CTFSay_Team_Location(edict_t *who, char *buf, size_t bufsize)
 	}
 
 	/* we now have the closest item
-	   see if there's more than one 
+	   see if there's more than one
 	   in the map, if so we need to
 	   determine what team is closest */
 	what = NULL;
@@ -2887,8 +2887,8 @@ CTFSay_Team_Location(edict_t *who, char *buf, size_t bufsize)
 			continue;
 		}
 
-		/* if we are here, there is more 
-		   than one, find out if hot is 
+		/* if we are here, there is more
+		   than one, find out if hot is
 		   closer to red flag or blue flag */
 		if (((flag1 = G_Find(NULL, FOFS(classname), "item_flag_team1")) != NULL) &&
 			((flag2 = G_Find(NULL, FOFS(classname), "item_flag_team2")) != NULL))
@@ -3273,7 +3273,7 @@ SP_misc_ctf_banner(edict_t *ent)
 		ent->s.skinnum = 1;
 	}
 
-	ent->s.frame = rand() % 16;
+	ent->s.frame = randk() % 16;
 	gi.linkentity(ent);
 
 	ent->think = misc_ctf_banner_think;
@@ -3297,7 +3297,7 @@ SP_misc_ctf_small_banner(edict_t *ent)
 		ent->s.skinnum = 1;
 	}
 
-	ent->s.frame = rand() % 16;
+	ent->s.frame = randk() % 16;
 	gi.linkentity(ent);
 
 	ent->think = misc_ctf_banner_think;
@@ -3466,7 +3466,7 @@ CTFAssignGhost(edict_t *ent)
 
 	for ( ; ; )
 	{
-		ctfgame.ghosts[ghost].code = 10000 + (rand() % 90000);
+		ctfgame.ghosts[ghost].code = 10000 + (randk() % 90000);
 
 		for (i = 0; i < MAX_CLIENTS; i++)
 		{
@@ -3533,7 +3533,7 @@ CTFStartMatch(void)
 			ent->svflags = SVF_NOCLIENT;
 			ent->flags &= ~FL_GODMODE;
 
-			ent->client->respawn_time = level.time + 1.0 + ((rand() % 30) / 10.0);
+			ent->client->respawn_time = level.time + 1.0 + ((randk() % 30) / 10.0);
 			ent->client->ps.pmove.pm_type = PM_DEAD;
 			ent->client->anim_priority = ANIM_DEATH;
 			ent->s.frame = FRAME_death308 - 1;
@@ -3970,7 +3970,7 @@ CTFJoinTeam(edict_t *ent, int desired_team)
 
 	/* add a teleportation effect */
 	ent->s.event = EV_PLAYER_TELEPORT;
-	
+
 	/* hold in place briefly */
 	ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
 	ent->client->ps.pmove.pm_time = 14;
@@ -4199,7 +4199,7 @@ CTFUpdateJoinMenu(edict_t *ent)
 		return CTF_TEAM2;
 	}
 
-	return (rand() & 1) ? CTF_TEAM1 : CTF_TEAM2;
+	return (randk() & 1) ? CTF_TEAM1 : CTF_TEAM2;
 }
 
 void
@@ -4515,8 +4515,8 @@ CTFCheckRules(void)
  *--------------------------------------------------------------------------*/
 
 static void
-old_teleporter_touch(edict_t *self, edict_t *other, cplane_t *plane,
-		csurface_t *surf)
+old_teleporter_touch(edict_t *self, edict_t *other, const cplane_t *plane,
+		const csurface_t *surf)
 {
 	edict_t *dest;
 	int i;
