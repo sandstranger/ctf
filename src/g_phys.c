@@ -682,7 +682,7 @@ SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
 
 			if (!block)
 			{
-			   	/* pushed ok */
+				/* pushed ok */
 				gi.linkentity(check);
 				continue;
 			}

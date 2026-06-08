@@ -40,9 +40,9 @@ InitTrigger(edict_t *self)
 	self->svflags = SVF_NOCLIENT;
 }
 
-/* 
- * The wait time has passed, so set 
- * back up for another activation 
+/*
+ * The wait time has passed, so set
+ * back up for another activation
  */
 void
 multi_wait(edict_t *ent)
@@ -83,7 +83,7 @@ Use_Multi(edict_t *ent, edict_t *other, edict_t *activator)
 }
 
 void
-Touch_Multi(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
+Touch_Multi(edict_t *self, edict_t *other, const cplane_t *plane, const csurface_t *surf)
 {
 	if (other->client)
 	{
@@ -125,13 +125,13 @@ Touch_Multi(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
  * Variable sized repeatable trigger.  Must be targeted at one or more entities.
  * If "delay" is set, the trigger waits some time after activating before firing.
  * "wait" : Seconds between triggerings. (.2 default)
- * 
+ *
  * sounds
  * 1)	secret
  * 2)	beep beep
  * 3)	large switch
  * 4)
- * 
+ *
  * set "message" to text string
  */
 void
@@ -190,7 +190,7 @@ SP_trigger_multiple(edict_t *ent)
 /*
  * QUAKED trigger_once (.5 .5 .5) ? x x TRIGGERED
  * Triggers once, then removes itself.
- * You must set the key "target" to the name of another object 
+ * You must set the key "target" to the name of another object
  * in the level that has a matching "targetname".
  *
  * If TRIGGERED, this trigger must be triggered before it is live.
@@ -207,7 +207,7 @@ SP_trigger_multiple(edict_t *ent)
 void
 SP_trigger_once(edict_t *ent)
 {
-	/* make old maps work because I messed up on flag assignments here 
+	/* make old maps work because I messed up on flag assignments here
 	   triggered was on bit 1 when it should have been on bit 4 */
 	if (ent->spawnflags & 1)
 	{
@@ -395,10 +395,10 @@ SP_trigger_key(edict_t *self)
  * QUAKED trigger_counter (.5 .5 .5) ? nomessage
  * Acts as an intermediary for an action that takes multiple inputs.
  *
- * If nomessage is not set, t will print "1 more.. " etc when triggered 
+ * If nomessage is not set, t will print "1 more.. " etc when triggered
  * and "sequence complete" when finished.
  *
- * After the counter has been triggered "count" times (default 2), it 
+ * After the counter has been triggered "count" times (default 2), it
  * will fire all of it's targets and remove itself.
  */
 void
@@ -482,8 +482,8 @@ SP_trigger_always(edict_t *ent)
 static int windsound;
 
 void
-trigger_push_touch(edict_t *self, edict_t *other, cplane_t *plane,
-		csurface_t *surf)
+trigger_push_touch(edict_t *self, edict_t *other, const cplane_t *plane,
+		const csurface_t *surf)
 {
 	if (strcmp(other->classname, "grenade") == 0)
 	{
@@ -574,7 +574,7 @@ hurt_use(edict_t *self, edict_t *other, edict_t *activator)
 }
 
 void
-hurt_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
+hurt_touch(edict_t *self, edict_t *other, const cplane_t *plane, const csurface_t *surf)
 {
 	int dflags;
 
@@ -664,8 +664,8 @@ SP_trigger_hurt(edict_t *self)
  */
 
 void
-trigger_gravity_touch(edict_t *self, edict_t *other, cplane_t *plane,
-		csurface_t *surf)
+trigger_gravity_touch(edict_t *self, edict_t *other, const cplane_t *plane,
+		const csurface_t *surf)
 {
 	other->gravity = self->gravity;
 }
@@ -700,8 +700,8 @@ SP_trigger_gravity(edict_t *self)
  * "height" default to 200, the speed thrown upwards
  */
 void
-trigger_monsterjump_touch(edict_t *self, edict_t *other, cplane_t *plane,
-		csurface_t *surf)
+trigger_monsterjump_touch(edict_t *self, edict_t *other, const cplane_t *plane,
+		const csurface_t *surf)
 {
 	if (other->flags & (FL_FLY | FL_SWIM))
 	{

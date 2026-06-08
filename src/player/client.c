@@ -31,11 +31,18 @@ void SP_misc_teleporter_dest(edict_t *ent);
 
 /*
  * QUAKED info_player_start (1 0 0) (-16 -16 -24) (16 16 32)
+ *
  * The normal starting point for a level.
  */
 void
 SP_info_player_start(edict_t *self)
 {
+	if (!self)
+	{
+		return;
+	}
+
+
 	if (!coop->value)
 	{
 		return;
@@ -44,11 +51,17 @@ SP_info_player_start(edict_t *self)
 
 /*
  * QUAKED info_player_deathmatch (1 0 1) (-16 -16 -24) (16 16 32)
+ *
  * potential spawning position for deathmatch games
  */
 void
 SP_info_player_deathmatch(edict_t *self)
 {
+	if (!self)
+	{
+		return;
+	}
+
 	if (!deathmatch->value)
 	{
 		G_FreeEdict(self);
@@ -62,10 +75,14 @@ SP_info_player_deathmatch(edict_t *self)
  * QUAKED info_player_coop (1 0 1) (-16 -16 -24) (16 16 32)
  * potential spawning position for coop games
  */
-
 void
 SP_info_player_coop(edict_t *self)
 {
+	if (!self)
+	{
+		return;
+	}
+
 	if (!coop->value)
 	{
 		G_FreeEdict(self);
@@ -80,23 +97,36 @@ SP_info_player_coop(edict_t *self)
  * roll as well as yaw.  'pitch yaw roll'
  */
 void
-SP_info_player_intermission(edict_t *ent)
+SP_info_player_intermission(edict_t *self)
 {
+	/* This function cannot be removed
+	 * since the info_player_intermission
+	 * needs a callback function. Like
+	 * every entity. */
 }
 
 /* ======================================================================= */
 
 void
-player_pain(edict_t *self, edict_t *other, float kick, int damage)
+player_pain(edict_t *self /* unused */, edict_t *other /* unused */,
+		float kick /* unused */, int damage /* unused */)
 {
-	/* player pain is handled at the
-	   end of the frame in P_DamageFeedback */
+	/* Player pain is handled at the end
+	 * of the frame in P_DamageFeedback.
+	 * This function is still here since
+	 * the player is an entity and needs
+	 * a pain callback */
 }
 
-qboolean
-IsFemale(edict_t *ent)
+static qboolean
+IsFemale(const edict_t *ent)
 {
 	char *info;
+
+	if (!ent)
+	{
+		return false;
+	}
 
 	if (!ent->client)
 	{
@@ -113,15 +143,52 @@ IsFemale(edict_t *ent)
 	return false;
 }
 
+static qboolean
+IsNeutral(const edict_t *ent)
+{
+	char *info;
+
+	if (!ent)
+	{
+		return false;
+	}
+
+	if (!ent->client)
+	{
+		return false;
+	}
+
+	info = Info_ValueForKey(ent->client->pers.userinfo, "gender");
+
+	if (strstr(info, "crakhor"))
+	{
+		return false;
+	}
+
+	if ((info[0] != 'f') && (info[0] != 'F') && (info[0] != 'm') &&
+		(info[0] != 'M'))
+	{
+		return true;
+	}
+
+	return false;
+}
+
 void
-ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
+ClientObituary(edict_t *self, const edict_t *inflictor /* unused */,
+		edict_t *attacker)
 {
 	int mod;
 	char *message;
 	char *message2;
 	qboolean ff;
 
-	if (coop->value && attacker->client)
+	if (!self || !inflictor)
+	{
+		return;
+	}
+
+	if (coop->value && attacker && attacker->client)
 	{
 		meansOfDeath |= MOD_FRIENDLY_FIRE;
 	}
@@ -183,7 +250,11 @@ ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
 				case MOD_HG_SPLASH:
 				case MOD_G_SPLASH:
 
-					if (IsFemale(self))
+					if (IsNeutral(self))
+					{
+						message = "tripped on its own grenade";
+					}
+					else if (IsFemale(self))
 					{
 						message = "tripped on her own grenade";
 					}
@@ -195,7 +266,11 @@ ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
 					break;
 				case MOD_R_SPLASH:
 
-					if (IsFemale(self))
+					if (IsNeutral(self))
+					{
+						message = "blew itself up";
+					}
+					else if (IsFemale(self))
 					{
 						message = "blew herself up";
 					}
@@ -210,7 +285,11 @@ ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
 					break;
 				default:
 
-					if (IsFemale(self))
+					if (IsNeutral(self))
+					{
+						message = "killed itself";
+					}
+					else if (IsFemale(self))
 					{
 						message = "killed herself";
 					}
@@ -348,15 +427,18 @@ ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker)
 	}
 }
 
-void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf);
-
 void
 TossClientWeapon(edict_t *self)
 {
-	gitem_t *item;
+	const gitem_t *item;
 	edict_t *drop;
 	qboolean quad;
 	float spread;
+
+	if (!self)
+	{
+		return;
+	}
 
 	if (!deathmatch->value)
 	{
@@ -420,6 +502,11 @@ LookAtKiller(edict_t *self, edict_t *inflictor, edict_t *attacker)
 {
 	vec3_t dir;
 
+	if (!self)
+	{
+		return;
+	}
+
 	if (attacker && (attacker != world) && (attacker != self))
 	{
 		VectorSubtract(attacker->s.origin, self->s.origin, dir);
@@ -460,9 +547,14 @@ LookAtKiller(edict_t *self, edict_t *inflictor, edict_t *attacker)
 
 void
 player_die(edict_t *self, edict_t *inflictor, edict_t *attacker,
-		int damage, vec3_t point)
+		int damage, const vec3_t point /* unused */)
 {
 	int n;
+
+	if (!self || !inflictor || !attacker)
+	{
+		return;
+	}
 
 	VectorClear(self->avelocity);
 
@@ -574,7 +666,7 @@ player_die(edict_t *self, edict_t *inflictor, edict_t *attacker,
 			}
 
 			gi.sound(self, CHAN_VOICE, gi.soundindex(va("*death%i.wav",
-							(rand() % 4) + 1)), 1, ATTN_NORM, 0);
+							(randk() % 4) + 1)), 1, ATTN_NORM, 0);
 		}
 	}
 
@@ -595,6 +687,11 @@ void
 InitClientPersistant(gclient_t *client)
 {
 	gitem_t *item;
+
+	if (!client)
+	{
+		return;
+	}
 
 	memset(&client->pers, 0, sizeof(client->pers));
 
@@ -624,8 +721,16 @@ InitClientPersistant(gclient_t *client)
 void
 InitClientResp(gclient_t *client)
 {
-	int ctf_team = client->resp.ctf_team;
-	qboolean id_state = client->resp.id_state;
+	int ctf_team;
+	qboolean id_state;
+
+	if (!client)
+	{
+		return;
+	}
+
+	ctf_team = client->resp.ctf_team;
+	id_state = client->resp.id_state;
 
 	memset(&client->resp, 0, sizeof(client->resp));
 
@@ -674,9 +779,14 @@ SaveClientData(void)
 	}
 }
 
-void
+static void
 FetchClientEntData(edict_t *ent)
 {
+	if (!ent)
+	{
+		return;
+	}
+
 	ent->health = ent->client->pers.health;
 	ent->max_health = ent->client->pers.max_health;
 	ent->flags |= ent->client->pers.savedFlags;
@@ -701,6 +811,11 @@ PlayersRangeFromSpot(edict_t *spot)
 	vec3_t v;
 	int n;
 	float playerdistance;
+
+	if (!spot)
+	{
+		return 0.0;
+	}
 
 	bestplayerdistance = 9999999;
 
@@ -778,7 +893,7 @@ SelectRandomDeathmatchSpawnPoint(void)
 		count -= 2;
 	}
 
-	selection = rand() % count;
+	selection = randk() % count;
 
 	spot = NULL;
 
@@ -832,7 +947,7 @@ SelectFarthestDeathmatchSpawnPoint(void)
 	return spot;
 }
 
-edict_t *
+static edict_t *
 SelectDeathmatchSpawnPoint(void)
 {
 	if ((int)(dmflags->value) & DF_SPAWN_FARTHEST)
@@ -845,12 +960,16 @@ SelectDeathmatchSpawnPoint(void)
 	}
 }
 
-edict_t *
-SelectCoopSpawnPoint(edict_t *ent)
+static edict_t *
+SelectCoopSpawnPoint(const edict_t *ent)
 {
 	int index;
 	edict_t *spot = NULL;
-	char *target;
+
+	if (!ent)
+	{
+		return NULL;
+	}
 
 	index = ent->client - game.clients;
 
@@ -865,6 +984,8 @@ SelectCoopSpawnPoint(edict_t *ent)
 	/* assume there are four coop spots at each spawnpoint */
 	while (1)
 	{
+		const char *target;
+
 		spot = G_Find(spot, FOFS(classname), "info_player_coop");
 
 		if (!spot)
@@ -898,9 +1019,17 @@ SelectCoopSpawnPoint(edict_t *ent)
  * Chooses a player start, deathmatch start, coop start, etc
  */
 void
-SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles)
+SelectSpawnPoint(const edict_t *ent, vec3_t origin, vec3_t angles)
 {
 	edict_t *spot = NULL;
+
+	VectorClear(origin);
+	VectorClear(angles);
+
+	if (!ent)
+	{
+		return;
+	}
 
 	if (deathmatch->value)
 	{
@@ -950,6 +1079,52 @@ SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles)
 			if (!spot)
 			{
 				gi.error("Couldn't find spawn point %s\n", game.spawnpoint);
+				return;
+			}
+		}
+	}
+
+	/* If we are in coop and we didn't find a coop
+	   spawnpoint due to map bugs (not correctly
+	   connected or the map was loaded via console
+	   and thus no previously map is known to the
+	   client) use one in 550 units radius. */
+	if (coop->value)
+	{
+		int index;
+
+		index = ent->client - game.clients;
+
+		if (Q_stricmp(spot->classname, "info_player_start") == 0 && index != 0)
+		{
+			int counter = 0;
+
+			while (counter < 3)
+			{
+				edict_t *coopspot = NULL;
+				vec3_t d;
+
+				coopspot = G_Find(coopspot, FOFS(classname), "info_player_coop");
+
+				if (!coopspot)
+				{
+					break;
+				}
+
+				VectorSubtract(coopspot->s.origin, spot->s.origin, d);
+
+				if ((VectorLength(d) < 550))
+				{
+					if (index == counter)
+					{
+						spot = coopspot;
+						break;
+					}
+					else
+					{
+						counter++;
+					}
+				}
 			}
 		}
 	}
@@ -964,27 +1139,38 @@ SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles)
 void
 InitBodyQue(void)
 {
-	int i;
-	edict_t *ent;
-
-	level.body_que = 0;
-
-	for (i = 0; i < BODY_QUEUE_SIZE; i++)
+	if (deathmatch->value || coop->value)
 	{
-		ent = G_Spawn();
-		ent->classname = "bodyque";
+		int i;
+
+		level.body_que = 0;
+
+		for (i = 0; i < BODY_QUEUE_SIZE; i++)
+		{
+			edict_t *ent;
+
+			ent = G_Spawn();
+			ent->classname = "bodyque";
+		}
 	}
 }
 
 void
-body_die(edict_t *self, edict_t *inflictor, edict_t *attacker,
-		int damage, vec3_t point)
+body_die(edict_t *self, edict_t *inflictor /* unused */,
+		edict_t *attacker /* unused */, int damage,
+		const vec3_t point /* unused */)
 {
 	int n;
 
+	if (!self)
+	{
+		return;
+	}
+
 	if (self->health < -40)
 	{
-		gi.sound(self, CHAN_BODY, gi.soundindex( "misc/udeath.wav"), 1, ATTN_NORM, 0);
+		gi.sound(self, CHAN_BODY, gi.soundindex(
+						"misc/udeath.wav"), 1, ATTN_NORM, 0);
 
 		for (n = 0; n < 4; n++)
 		{
@@ -1003,12 +1189,16 @@ CopyToBodyQue(edict_t *ent)
 {
 	edict_t *body;
 
+	if (!ent)
+	{
+		return;
+	}
+
 	/* grab a body que and cycle to the next one */
 	body = &g_edicts[(int)maxclients->value + level.body_que + 1];
 	level.body_que = (level.body_que + 1) % BODY_QUEUE_SIZE;
 
 	gi.unlinkentity(ent);
-
 	gi.unlinkentity(body);
 	body->s = ent->s;
 	body->s.number = body - g_edicts;
@@ -1033,8 +1223,14 @@ CopyToBodyQue(edict_t *ent)
 void
 respawn(edict_t *self)
 {
+	if (!self)
+	{
+		return;
+	}
+
 	if (deathmatch->value || coop->value)
 	{
+		/* spectator's don't leave bodies */
 		if (self->movetype != MOVETYPE_NOCLIP)
 		{
 			CopyToBodyQue(self);
@@ -1062,13 +1258,17 @@ respawn(edict_t *self)
 /* ============================================================== */
 
 /*
- * Called when a player connects
- * to a server or respawns in
- * a deathmatch.
+ * Called when a player connects to
+ * a server or respawns in a deathmatch.
  */
 void
 PutClientInServer(edict_t *ent)
 {
+	if (!ent)
+	{
+		return;
+	}
+
 	vec3_t mins = {-16, -16, -24};
 	vec3_t maxs = {16, 16, 32};
 	int index;
@@ -1245,6 +1445,11 @@ PutClientInServer(edict_t *ent)
 void
 ClientBeginDeathmatch(edict_t *ent)
 {
+	if (!ent)
+	{
+		return;
+	}
+
 	G_InitEdict(ent);
 
 	InitClientResp(ent->client);
@@ -1279,6 +1484,11 @@ void
 ClientBegin(edict_t *ent)
 {
 	int i;
+
+	if (!ent)
+	{
+		return;
+	}
 
 	ent->client = game.clients + (ent - g_edicts - 1);
 
@@ -1349,6 +1559,11 @@ ClientUserinfoChanged(edict_t *ent, char *userinfo)
 	char *s;
 	int playernum;
 
+	if (!ent || !userinfo)
+	{
+		return;
+	}
+
 	/* check for malformed or illegal info strings */
 	if (!Info_Validate(userinfo))
 	{
@@ -1357,7 +1572,7 @@ ClientUserinfoChanged(edict_t *ent, char *userinfo)
 
 	/* set name */
 	s = Info_ValueForKey(userinfo, "name");
-	strncpy(ent->client->pers.netname, s, sizeof(ent->client->pers.netname) - 1);
+	Q_strlcpy(ent->client->pers.netname, s, sizeof(ent->client->pers.netname));
 
 	/* set skin */
 	s = Info_ValueForKey(userinfo, "skin");
@@ -1406,8 +1621,7 @@ ClientUserinfoChanged(edict_t *ent, char *userinfo)
 	}
 
 	/* save off the userinfo in case we want to check something later */
-	strncpy(ent->client->pers.userinfo, userinfo,
-			sizeof(ent->client->pers.userinfo) - 1);
+	Q_strlcpy(ent->client->pers.userinfo, userinfo, sizeof(ent->client->pers.userinfo));
 }
 
 /*
@@ -1422,6 +1636,11 @@ qboolean
 ClientConnect(edict_t *ent, char *userinfo)
 {
 	char *value;
+
+	if (!ent || !userinfo)
+	{
+		return false;
+	}
 
 	/* check to see if they are on the banned IP list */
 	value = Info_ValueForKey(userinfo, "ip");
@@ -1482,6 +1701,11 @@ ClientDisconnect(edict_t *ent)
 {
 	int playernum;
 
+	if (!ent)
+	{
+		return;
+	}
+
 	if (!ent->client)
 	{
 		return;
@@ -1511,13 +1735,13 @@ ClientDisconnect(edict_t *ent)
 
 /* ============================================================== */
 
-edict_t *pm_passent;
+static edict_t *pm_passent;
 
 /*
- * pmove doesn't need to know about
- * passent and contentmask
+ * pmove doesn't need to know
+ * about passent and contentmask
  */
-trace_t
+static trace_t
 PM_trace(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 {
 	if (pm_passent->health > 0)
@@ -1535,6 +1759,11 @@ CheckBlock(void *b, int c)
 {
 	int v, i;
 
+	if (!b)
+	{
+		return 0;
+	}
+
 	v = 0;
 
 	for (i = 0; i < c; i++)
@@ -1549,6 +1778,11 @@ void
 PrintPmove(pmove_t *pm)
 {
 	unsigned c1, c2;
+
+	if (!pm)
+	{
+		return;
+	}
 
 	c1 = CheckBlock(&pm->s, sizeof(pm->s));
 	c2 = CheckBlock(&pm->cmd, sizeof(pm->cmd));
@@ -1566,6 +1800,11 @@ ClientThink(edict_t *ent, usercmd_t *ucmd)
 	edict_t *other;
 	int i, j;
 	pmove_t pm;
+
+	if (!ent || !ucmd)
+	{
+		return;
+	}
 
 	level.current_entity = ent;
 	client = ent->client;
@@ -1774,6 +2013,11 @@ ClientBeginServerFrame(edict_t *ent)
 	gclient_t *client;
 	int buttonMask;
 
+	if (!ent)
+	{
+		return;
+	}
+
 	if (level.intermissiontime)
 	{
 		return;
@@ -1831,4 +2075,3 @@ ClientBeginServerFrame(edict_t *ent)
 
 	client->latched_buttons = 0;
 }
-

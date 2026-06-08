@@ -79,21 +79,6 @@ cvar_t *sv_maplist;
 
 cvar_t *aimfix;
 
-void SpawnEntities(char *mapname, char *entities, char *spawnpoint);
-void ClientThink(edict_t *ent, usercmd_t *cmd);
-qboolean ClientConnect(edict_t *ent, char *userinfo);
-void ClientUserinfoChanged(edict_t *ent, char *userinfo);
-void ClientDisconnect(edict_t *ent);
-void ClientBegin(edict_t *ent);
-void ClientCommand(edict_t *ent);
-void RunEntity(edict_t *ent);
-void WriteGame(char *filename, qboolean autosave);
-void ReadGame(char *filename);
-void WriteLevel(char *filename);
-void ReadLevel(char *filename);
-void InitGame(void);
-void G_RunFrame(void);
-
 /* =================================================================== */
 
 void
@@ -110,7 +95,7 @@ ShutdownGame(void)
  * all entry points and global variables
  */
 Q2_DLL_EXPORTED game_export_t *
-GetGameAPI(game_import_t *import)
+GetGameAPI(const game_import_t *import)
 {
 	gi = *import;
 
@@ -136,6 +121,9 @@ GetGameAPI(game_import_t *import)
 	globals.ServerCommand = ServerCommand;
 
 	globals.edict_size = sizeof(edict_t);
+
+	/* Initalize the PRNG */
+	randk_seed();
 
 	return &globals;
 }

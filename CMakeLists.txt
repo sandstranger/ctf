@@ -21,6 +21,15 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fno-strict-aliasing -fwrapv")
 # Use -O2 as maximum optimization level. -O3 has it's problems with yquake2.
 string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 
+# Operating system
+add_definitions(-DYQ2OSTYPE="${CMAKE_SYSTEM_NAME}")
+
+# Architecture string
+string(REGEX REPLACE "amd64" "x86_64" YQ2_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+string(REGEX REPLACE "i.86" "i386" YQ2_ARCH "${YQ2_ARCH}")
+string(REGEX REPLACE "^arm.*" "arm" YQ2_ARCH "${YQ2_ARCH}")
+add_definitions(-DYQ2ARCH="${YQ2_ARCH}")
+
 # Linker Flags
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	list(APPEND CtfLinkerFlags "-lm")
@@ -36,6 +45,9 @@ set(Ctf-Source
 	src/player/trail.c
 	src/player/view.c
 	src/player/weapon.c
+	src/savegame/savegame.c
+	src/shared/flash.c
+	src/shared/rand.c
 	src/shared/shared.c
 	src/g_ai.c
 	src/g_chase.c
@@ -48,7 +60,6 @@ set(Ctf-Source
 	src/g_misc.c
 	src/g_monster.c
 	src/g_phys.c
-	src/savegame/savegame.c
 	src/g_spawn.c
 	src/g_svcmds.c
 	src/g_target.c

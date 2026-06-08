@@ -117,6 +117,11 @@ ai_stand(edict_t *self, float dist)
 {
 	vec3_t v;
 
+	if (!self)
+	{
+		return;
+	}
+
 	if (dist)
 	{
 		M_walkmove(self, self->s.angles[YAW], dist);
@@ -132,8 +137,7 @@ ai_stand(edict_t *self, float dist)
 			if ((self->s.angles[YAW] != self->ideal_yaw) &&
 				self->monsterinfo.aiflags & AI_TEMP_STAND_GROUND)
 			{
-				self->monsterinfo.aiflags &=
-					~(AI_STAND_GROUND | AI_TEMP_STAND_GROUND);
+				self->monsterinfo.aiflags &= ~(AI_STAND_GROUND | AI_TEMP_STAND_GROUND);
 				self->monsterinfo.run(self);
 			}
 
@@ -180,6 +184,11 @@ ai_stand(edict_t *self, float dist)
 void
 ai_walk(edict_t *self, float dist)
 {
+	if (!self)
+	{
+		return;
+	}
+
 	M_MoveToGoal(self, dist);
 
 	/* check for noticing a player */
@@ -212,7 +221,16 @@ ai_charge(edict_t *self, float dist)
 {
 	vec3_t v;
 
-	VectorSubtract(self->enemy->s.origin, self->s.origin, v);
+	if (!self)
+	{
+		return;
+	}
+
+	if(self->enemy)
+	{
+		VectorSubtract(self->enemy->s.origin, self->s.origin, v);
+	}
+
 	self->ideal_yaw = vectoyaw(v);
 	M_ChangeYaw(self);
 
@@ -230,6 +248,11 @@ ai_charge(edict_t *self, float dist)
 void
 ai_turn(edict_t *self, float dist)
 {
+	if (!self)
+	{
+		return;
+	}
+
 	if (dist)
 	{
 		M_walkmove(self, self->s.angles[YAW], dist);
@@ -244,7 +267,6 @@ ai_turn(edict_t *self, float dist)
 }
 
 /*
- *
  * .enemy
  * Will be world if not currently angry at anyone.
  *
@@ -285,6 +307,11 @@ range(edict_t *self, edict_t *other)
 	vec3_t v;
 	float len;
 
+	if (!self || !other)
+	{
+		return 0;
+	}
+
 	VectorSubtract(self->s.origin, other->s.origin, v);
 	len = VectorLength(v);
 
@@ -308,14 +335,19 @@ range(edict_t *self, edict_t *other)
 
 /*
  * returns 1 if the entity is visible
- * to self, even if not infront ().
+ * to self, even if not infront()
  */
 qboolean
-visible(edict_t *self, edict_t *other)
+visible(const edict_t *self, const edict_t *other)
 {
 	vec3_t spot1;
 	vec3_t spot2;
 	trace_t trace;
+
+	if (!self || !other)
+	{
+		return false;
+	}
 
 	VectorCopy(self->s.origin, spot1);
 	spot1[2] += self->viewheight;
@@ -332,7 +364,8 @@ visible(edict_t *self, edict_t *other)
 }
 
 /*
- * returns 1 if the entity is in front (in sight) of self
+ * returns 1 if the entity is in
+ * front (in sight) of self
  */
 qboolean
 infront(edict_t *self, edict_t *other)
@@ -341,18 +374,12 @@ infront(edict_t *self, edict_t *other)
 	float dot;
 	vec3_t forward;
 
-	if ((self == NULL) || (other == NULL))
+	if (!self || !other)
 	{
 		return false;
 	}
 
 	AngleVectors(self->s.angles, forward, NULL, NULL);
-
-	if ((self == NULL) || (other == NULL))
-	{
-		return false;
-	}
-
 	VectorSubtract(other->s.origin, self->s.origin, vec);
 	VectorNormalize(vec);
 	dot = DotProduct(vec, forward);
@@ -371,6 +398,11 @@ void
 HuntTarget(edict_t *self)
 {
 	vec3_t vec;
+
+	if (!self)
+	{
+		return;
+	}
 
 	self->goalentity = self->enemy;
 
@@ -396,6 +428,11 @@ HuntTarget(edict_t *self)
 void
 FoundTarget(edict_t *self)
 {
+	if (!self|| !self->enemy || !self->enemy->inuse)
+	{
+		return;
+	}
+
 	/* let other monsters see this monster for a while */
 	if (self->enemy->client)
 	{
@@ -404,7 +441,7 @@ FoundTarget(edict_t *self)
 		level.sight_entity->light_level = 128;
 	}
 
-	self->show_hostile = (int)level.time + 1; /* wake up other monsters */
+	self->show_hostile = level.time + 1; /* wake up other monsters */
 
 	VectorCopy(self->enemy->s.origin, self->monsterinfo.last_sighting);
 	self->monsterinfo.trail_time = level.time;
@@ -462,6 +499,11 @@ FindTarget(edict_t *self)
 	edict_t *client;
 	qboolean heardit;
 	int r;
+
+	if (!self)
+	{
+		return false;
+	}
 
 	if (self->monsterinfo.aiflags & AI_GOOD_GUY)
 	{
@@ -577,7 +619,7 @@ FindTarget(edict_t *self)
 
 		if (r == RANGE_NEAR)
 		{
-			if ((client->show_hostile < (int)level.time) && !infront(self, client))
+			if ((client->show_hostile < level.time) && !infront(self, client))
 			{
 				return false;
 			}
@@ -629,7 +671,7 @@ FindTarget(edict_t *self)
 
 		VectorSubtract(client->s.origin, self->s.origin, temp);
 
-		if (VectorLength(temp) > 1000)  /* too far to hear */
+		if (VectorLength(temp) > 1000) /* too far to hear */
 		{
 			return false;
 		}
@@ -667,9 +709,14 @@ FindTarget(edict_t *self)
 /* ============================================================================= */
 
 qboolean
-FacingIdeal(edict_t *self)
+FacingIdeal(const edict_t *self)
 {
 	float delta;
+
+	if (!self)
+	{
+		return false;
+	}
 
 	delta = anglemod(self->s.angles[YAW] - self->ideal_yaw);
 
@@ -689,6 +736,11 @@ M_CheckAttack(edict_t *self)
 	vec3_t spot1, spot2;
 	float chance;
 	trace_t tr;
+
+	if (!self || !self->enemy || !self->enemy->inuse)
+	{
+		return false;
+	}
 
 	if (self->enemy->health > 0)
 	{
@@ -713,7 +765,7 @@ M_CheckAttack(edict_t *self)
 	if (enemy_range == RANGE_MELEE)
 	{
 		/* don't always melee in easy mode */
-		if ((skill->value == 0) && (rand() & 3))
+		if ((skill->value == SKILL_EASY) && (randk() & 3))
 		{
 			return false;
 		}
@@ -767,11 +819,11 @@ M_CheckAttack(edict_t *self)
 		return false;
 	}
 
-	if (skill->value == 0)
+	if (skill->value == SKILL_EASY)
 	{
 		chance *= 0.5;
 	}
-	else if (skill->value >= 2)
+	else if (skill->value >= SKILL_HARD)
 	{
 		chance *= 2;
 	}
@@ -805,6 +857,11 @@ M_CheckAttack(edict_t *self)
 void
 ai_run_melee(edict_t *self)
 {
+	if (!self)
+	{
+		return;
+	}
+
 	self->ideal_yaw = enemy_yaw;
 	M_ChangeYaw(self);
 
@@ -825,6 +882,11 @@ ai_run_melee(edict_t *self)
 void
 ai_run_missile(edict_t *self)
 {
+	if (!self)
+	{
+		return;
+	}
+
 	self->ideal_yaw = enemy_yaw;
 	M_ChangeYaw(self);
 
@@ -846,6 +908,11 @@ void
 ai_run_slide(edict_t *self, float distance)
 {
 	float ofs;
+
+	if (!self)
+	{
+		return;
+	}
 
 	self->ideal_yaw = enemy_yaw;
 	M_ChangeYaw(self);
@@ -986,7 +1053,7 @@ ai_checkattack(edict_t *self, float dist)
 		}
 	}
 
-	self->show_hostile = (int)level.time + 1; /* wake up other monsters */
+	self->show_hostile = level.time + 1; /* wake up other monsters */
 
 	/* check knowledge of enemy */
 	enemy_vis = visible(self, self->enemy);
@@ -1040,6 +1107,11 @@ ai_run(edict_t *self, float dist)
 	vec3_t v_forward, v_right;
 	float left, center, right;
 	vec3_t left_target, right_target;
+
+	if (!self)
+	{
+		return;
+	}
 
 	/* if we're going to a combat point, just proceed */
 	if (self->monsterinfo.aiflags & AI_COMBAT_POINT)
@@ -1233,4 +1305,3 @@ ai_run(edict_t *self, float dist)
 		self->goalentity = save;
 	}
 }
-

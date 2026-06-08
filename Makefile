@@ -6,8 +6,8 @@
 #                                                       #
 # Dependencies:                                         #
 # - None, but you need a Quake II to play.              #
-#   While in theory every one should work              #
-#   Yamagi Quake II is recommended.                    #
+#   While in theory every one should work               #
+#   Yamagi Quake II is recommended.                     #
 #                                                       #
 # Platforms:                                            #
 # - FreeBSD                                             #
@@ -16,6 +16,54 @@
 # - OpenBSD                                             #
 # - Windows                                             #
 # ----------------------------------------------------- #
+
+# Variables
+# ---------
+# ASAN
+#   Builds with address sanitizer, includes DEBUG.
+# DEBUG
+#   Builds a debug build, forces -O0 and adds debug symbols.
+# MINGW_CHOST
+#   If you use mingw this can specify architecture.
+#   Available values:
+#   x86_64-w64-mingw32 -> indicates x86_64
+#   i686-w64-mingw32   -> indicates i386
+# QUIET
+#   If defined, "===> CC ..." lines are silenced.
+# SOURCE_DATE_EPOCH
+#   For reproduceable builds, look here for details:
+#   https://reproducible-builds.org/specs/source-date-epoch/
+#   If set, adds a BUILD_DATE define to CFLAGS.
+# UBSAN
+#   Builds with undefined behavior sanitizer.includes DEBUG.
+# VERBOSE
+#   Prints full compile, linker and misc commands.
+# WERR
+#   Treat compiler warnings as errors.
+#   If defined, -Werror is added to compiler flags.
+# ----------
+
+# User configurable options
+# -------------------------
+
+# CONFIG_FILE
+# This is an optional configuration file, it'll be used in
+# case of presence.
+CONFIG_FILE:=config.mk
+
+# ----------
+
+# In case of a configuration file being present, we'll just use it
+ifeq ($(wildcard $(CONFIG_FILE)), $(CONFIG_FILE))
+include $(CONFIG_FILE)
+endif
+
+# Normalize QUIET value to either "x" or ""
+ifdef QUIET
+	override QUIET := "x"
+else
+	override QUIET := ""
+endif
 
 # Detect the OS
 ifdef SystemRoot
@@ -49,7 +97,7 @@ endif # windows but MINGW_CHOST not defined
 else
 ifneq ($(YQ2_OSTYPE), Darwin)
 # Normalize some abiguous YQ2_ARCH strings
-YQ2_ARCH ?= $(shell uname -m | sed -e 's/i.86/i386/' -e 's/amd64/x86_64/' -e 's/arm64/aarch64/' -e 's/^arm.*/arm/')
+YQ2_ARCH ?= $(shell uname -m | sed -e 's/i.86/i386/' -e 's/amd64/x86_64/' -e 's/^arm.*/arm/')
 else
 YQ2_ARCH ?= $(shell uname -m)
 endif
@@ -71,15 +119,47 @@ else
 COMPILER := unknown
 endif
 
+# ASAN includes DEBUG
+ifdef ASAN
+DEBUG=1
+endif
+
+# UBSAN includes DEBUG
+ifdef UBSAN
+DEBUG=1
+endif
+
+# ----------
+
+# Set up build and bin output directories
+
+# Root dir names
+override BINROOT :=
+override BUILDROOT := build
+
+override BINDIR := $(BINROOT)release
+override BUILDDIR := $(BUILDROOT)
+
 # ----------
 
 # Base CFLAGS. These may be overridden by the environment.
 # Highest supported optimizations are -O2, higher levels
 # will likely break this crappy code.
 ifdef DEBUG
-CFLAGS ?= -O0 -g -Wall -pipe
+CFLAGS ?= -O0 -g -Wall -pipe -DDEBUG
+ifdef ASAN
+override CFLAGS += -fsanitize=address -DUSE_SANITIZER
+endif
+ifdef UBSAN
+override CFLAGS += -fsanitize=undefined -DUSE_SANITIZER
+endif
 else
 CFLAGS ?= -O2 -Wall -pipe -fomit-frame-pointer
+endif
+
+# Optionally treat warnings as errors
+ifdef WERR
+override CFLAGS += -Werror
 endif
 
 # Always needed are:
@@ -88,7 +168,9 @@ endif
 #   to get it there...
 #  -fwrapv for defined integer wrapping. MSVC6 did this
 #   and the game code requires it.
-override CFLAGS += -fno-strict-aliasing -fwrapv
+#  -fvisibility=hidden to keep symbols hidden. This is
+#   mostly best practice and not really necessary.
+override CFLAGS += -fno-strict-aliasing -fwrapv -fvisibility=hidden
 
 # -MMD to generate header dependencies. Unsupported by
 #  the Clang shipped with OS X.
@@ -103,7 +185,7 @@ endif
 
 # ----------
 
-# Switch off some annoying warnings.
+# Switch of some annoying warnings.
 ifeq ($(COMPILER), clang)
 	# -Wno-missing-braces because otherwise clang complains
 	#  about totally valid 'vec3_t bla = {0}' constructs.
@@ -124,8 +206,6 @@ override CFLAGS += -DYQ2OSTYPE=\"$(YQ2_OSTYPE)\" -DYQ2ARCH=\"$(YQ2_ARCH)\"
 
 # ----------
 
-# For reproducible builds, look here for details:
-# https://reproducible-builds.org/specs/source-date-epoch/
 ifdef SOURCE_DATE_EPOCH
 CFLAGS += -DBUILD_DATE=\"$(shell date --utc --date="@${SOURCE_DATE_EPOCH}" +"%b %_d %Y" | sed -e 's/ /\\ /g')\"
 endif
@@ -154,6 +234,16 @@ LDFLAGS ?=
 # It's a shared library.
 override LDFLAGS += -shared
 
+# Link address sanitizer if requested.
+ifdef ASAN
+override LDFLAGS += -fsanitize=address
+endif
+
+# Link undefined behavior sanitizer if requested.
+ifdef UBSAN
+override LDFLAGS += -fsanitize=undefined
+endif
+
 # Required libraries
 ifeq ($(YQ2_OSTYPE), Darwin)
 override LDFLAGS += -arch $(YQ2_ARCH)
@@ -161,6 +251,19 @@ else ifeq ($(YQ2_OSTYPE), Windows)
 override LDFLAGS += -static-libgcc
 else
 override LDFLAGS += -lm
+endif
+
+# ASAN and UBSAN must not be linked
+# with --no-undefined. OSX and OpenBSD
+# don't support it at all.
+ifndef ASAN
+ifndef UBSAN
+ifneq ($(YQ2_OSTYPE), Darwin)
+ifneq ($(YQ2_OSTYPE), OpenBSD)
+override LDFLAGS += -Wl,--no-undefined
+endif
+endif
+endif
 endif
 
 # ----------
@@ -197,26 +300,28 @@ clean:
 ifeq ($(YQ2_OSTYPE), Windows)
 ctf:
 	@echo "===> Building game.dll"
-	$(Q)mkdir -p release
-	$(MAKE) release/game.dll
+	${Q}mkdir -p $(BINDIR)
+	${MAKE} $(BINDIR)/game.dll
 else ifeq ($(YQ2_OSTYPE), Darwin)
 ctf:
 	@echo "===> Building game.dylib"
-	${Q}mkdir -p release
-	$(MAKE) release/game.dylib
+	${Q}mkdir -p $(BINDIR)
+	$(MAKE) $(BINDIR)/game.dylib
 else
 ctf:
 	@echo "===> Building game.so"
-	$(Q)mkdir -p release
-	$(MAKE) release/game.so
+	${Q}mkdir -p $(BINDIR)
+	$(MAKE) $(BINDIR)/game.so
 
-release/game.so : CFLAGS += -fPIC
+$(BINDIR)/game.so : CFLAGS += -fPIC
 endif
 
-build/%.o: %.c
-	@echo "===> CC $<"
-	$(Q)mkdir -p $(@D)
-	$(Q)$(CC) -c $(CFLAGS) -o $@ $<
+$(BUILDDIR)/%.o: %.c
+	@if [ -z $(QUIET) ]; then\
+		echo "===> CC $<";\
+	fi
+	${Q}mkdir -p $(@D)
+	${Q}$(CC) -c $(CFLAGS) -o $@ $<
 
 # ----------
 
@@ -232,7 +337,6 @@ CTF_OBJS_ = \
 	src/g_misc.o \
 	src/g_monster.o \
 	src/g_phys.o \
-	src/savegame/savegame.o \
 	src/g_spawn.o \
 	src/g_svcmds.o \
 	src/g_target.o \
@@ -246,12 +350,15 @@ CTF_OBJS_ = \
 	src/player/trail.o \
 	src/player/view.o \
 	src/player/weapon.o \
+	src/savegame/savegame.o \
+	src/shared/flash.o \
+	src/shared/rand.o \
 	src/shared/shared.o
 
 # ----------
 
-# Rewrite pathes to our object directory
-CTF_OBJS = $(patsubst %,build/%,$(CTF_OBJS_))
+# Rewrite paths to our object directory
+CTF_OBJS = $(patsubst %,$(BUILDDIR)/%,$(CTF_OBJS_))
 
 # ----------
 
@@ -266,17 +373,17 @@ CTF_DEPS= $(CTF_OBJS:.o=.d)
 # ----------
 
 ifeq ($(YQ2_OSTYPE), Windows)
-release/game.dll : $(CTF_OBJS)
+$(BINDIR)/game.dll : $(CTF_OBJS)
 	@echo "===> LD $@"
-	$(Q)$(CC) -o $@ $(CTF_OBJS) $(LDFLAGS)
+	${Q}$(CC) -o $@ $(CTF_OBJS) $(LDFLAGS)
 else ifeq ($(YQ2_OSTYPE), Darwin)
-release/game.dylib : $(CTF_OBJS)
+$(BINDIR)/game.dylib : $(CTF_OBJS)
 	@echo "===> LD $@"
 	${Q}$(CC) -o $@ $(CTF_OBJS) $(LDFLAGS)
 else
-release/game.so : $(CTF_OBJS)
+$(BINDIR)/game.so : $(CTF_OBJS)
 	@echo "===> LD $@"
-	$(Q)$(CC) -o $@ $(CTF_OBJS) $(LDFLAGS)
+	${Q}$(CC) -o $@ $(CTF_OBJS) $(LDFLAGS)
 endif
 
 # ----------
