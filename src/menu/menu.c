@@ -52,8 +52,13 @@ PMenu_Open(edict_t *ent, pmenu_t *entries, int cur, int num, void *arg)
 	hnd = malloc(sizeof(*hnd));
 
 	hnd->arg = arg;
-	hnd->entries = malloc(sizeof(pmenu_t) * num);
-	memcpy(hnd->entries, entries, sizeof(pmenu_t) * num);
+	if (num <= 0)
+	{
+		free(hnd);
+		return NULL;
+	}
+	hnd->entries = calloc((size_t)num, sizeof(pmenu_t));
+	memcpy(hnd->entries, entries, sizeof(pmenu_t) * (size_t)num);
 
 	/* duplicate the strings since they may be from static memory */
 	for (i = 0; i < num; i++)
@@ -160,6 +165,7 @@ PMenu_Do_Update(edict_t *ent)
 	pmenuhnd_t *hnd;
 	char *t;
 	qboolean alt = false;
+	size_t len;
 
 	if (!ent->client->menu)
 	{
@@ -169,7 +175,7 @@ PMenu_Do_Update(edict_t *ent)
 
 	hnd = ent->client->menu;
 
-	strcpy(string, "xv 32 yv 8 picn inventory ");
+	len = snprintf(string, sizeof(string), "xv 32 yv 8 picn inventory ");
 
 	for (i = 0, p = hnd->entries; i < hnd->num; i++, p++)
 	{
@@ -186,7 +192,7 @@ PMenu_Do_Update(edict_t *ent)
 			t++;
 		}
 
-		sprintf(string + strlen(string), "yv %d ", 32 + i * 8);
+		len += snprintf(string + len, sizeof(string) - len, "yv %d ", 32 + i * 8);
 
 		if (p->align == PMENU_ALIGN_CENTER)
 		{
@@ -201,19 +207,23 @@ PMenu_Do_Update(edict_t *ent)
 			x = 64;
 		}
 
-		sprintf(string + strlen(string), "xv %d ", x - ((hnd->cur == i) ? 8 : 0));
+		len += snprintf(string + len, sizeof(string) - len, "xv %d ", x - ((hnd->cur == i) ? 8 : 0));
 
 		if (hnd->cur == i)
 		{
-			sprintf(string + strlen(string), "string2 \"\x0d%s\" ", t);
+			len += snprintf(string + len, sizeof(string) - len, "string2 \"\x0d%s\" ", t);
 		}
 		else if (alt)
 		{
-			sprintf(string + strlen(string), "string2 \"%s\" ", t);
+			len += snprintf(string + len, sizeof(string) - len, "string2 \"%s\" ", t);
 		}
 		else
 		{
-			sprintf(string + strlen(string), "string \"%s\" ", t);
+			len += snprintf(string + len, sizeof(string) - len, "string \"%s\" ", t);
+		}
+
+		if (len >= sizeof(string)) {
+			break;
 		}
 
 		alt = false;
